@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 
 import { getSql } from "@/lib/db";
 import { getDashboardState } from "@/lib/db-repository";
-import { mockDigitalTwinState } from "@/lib/mock-data";
+import { getMockDashboardState } from "@/lib/mock-state";
 
 export async function GET() {
   const sql = getSql();
 
   if (!sql) {
-    return NextResponse.json(mockDigitalTwinState);
+    return NextResponse.json(getMockDashboardState());
   }
 
   try {

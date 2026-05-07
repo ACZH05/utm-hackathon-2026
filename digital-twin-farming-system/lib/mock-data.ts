@@ -1,5 +1,8 @@
 import type {
   Alert,
+  AIAutomationRecommendation,
+  AutomationEvent,
+  AutomationSettings,
   DeviceState,
   DigitalTwinState,
   PlantProfile,
@@ -90,6 +93,16 @@ export const mockDeviceState: DeviceState = {
   fanStatus: "off",
   pumpStatus: "normal",
   reservoirStatus: "normal",
+};
+
+export const mockAutomationSettings: AutomationSettings = {
+  mode: "manual",
+  ledStartTime: "06:00",
+  ledEndTime: "20:00",
+  ledSpectrum: "mixed",
+  fanTriggerTemperature: mockPlantProfile.safeTemperatureRange[1],
+  pumpIntervalMinutes: 45,
+  pumpDurationSeconds: 20,
 };
 
 export function generateAlerts(
@@ -222,9 +235,150 @@ export function generateRecommendation(
   };
 }
 
+export function generateAutomationRecommendation(
+  sensorReading: SensorReading,
+  plantProfile: PlantProfile,
+): AIAutomationRecommendation {
+  const [, safeTemperatureMaximum] = plantProfile.safeTemperatureRange;
+  const [safeSoilMoistureMinimum] = plantProfile.safeSoilMoistureRange;
+  const soilMoistureIsLow = sensorReading.soilMoisture < safeSoilMoistureMinimum;
+
+  return {
+    cropName: plantProfile.cropName,
+    ledStartTime: "06:00",
+    ledEndTime: "20:00",
+    ledSpectrum: "mixed",
+    fanTriggerTemperature: safeTemperatureMaximum,
+    pumpIntervalMinutes: soilMoistureIsLow ? 25 : 45,
+    pumpDurationSeconds: soilMoistureIsLow ? 30 : 20,
+    confidence: soilMoistureIsLow ? 0.88 : 0.82,
+  };
+}
+
+export function applyAutomationRecommendation(
+  aiAutomationRecommendation: AIAutomationRecommendation,
+): AutomationSettings {
+  return {
+    mode: "ai",
+    ledStartTime: aiAutomationRecommendation.ledStartTime,
+    ledEndTime: aiAutomationRecommendation.ledEndTime,
+    ledSpectrum: aiAutomationRecommendation.ledSpectrum,
+    fanTriggerTemperature: aiAutomationRecommendation.fanTriggerTemperature,
+    pumpIntervalMinutes: aiAutomationRecommendation.pumpIntervalMinutes,
+    pumpDurationSeconds: aiAutomationRecommendation.pumpDurationSeconds,
+  };
+}
+
+function parseTimeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return 0;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function isTimeWithinRange(
+  mockCurrentTime: string,
+  startTime: string,
+  endTime: string,
+): boolean {
+  const currentMinutes = parseTimeToMinutes(mockCurrentTime);
+  const startMinutes = parseTimeToMinutes(startTime);
+  const endMinutes = parseTimeToMinutes(endTime);
+
+  if (startMinutes <= endMinutes) {
+    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  }
+
+  return currentMinutes >= startMinutes || currentMinutes < endMinutes;
+}
+
+export function simulateAutomation(
+  sensorReading: SensorReading,
+  automationSettings: AutomationSettings,
+  currentDeviceState: DeviceState,
+  mockCurrentTime: string,
+): { deviceState: DeviceState; automationEvent?: AutomationEvent } {
+  const currentMinutes = parseTimeToMinutes(mockCurrentTime);
+  const currentSeconds = currentMinutes * 60;
+  const pumpIntervalSeconds = automationSettings.pumpIntervalMinutes * 60;
+  const pumpCycleSecond =
+    pumpIntervalSeconds > 0 ? currentSeconds % pumpIntervalSeconds : 0;
+
+  const ledStatus = isTimeWithinRange(
+    mockCurrentTime,
+    automationSettings.ledStartTime,
+    automationSettings.ledEndTime,
+  )
+    ? "on"
+    : "off";
+  const fanStatus =
+    sensorReading.temperature >= automationSettings.fanTriggerTemperature
+      ? "on"
+      : "off";
+  const pumpStatus =
+    pumpCycleSecond < automationSettings.pumpDurationSeconds ? "on" : "off";
+
+  const deviceState: DeviceState = {
+    ...currentDeviceState,
+    ledStatus,
+    fanStatus,
+    pumpStatus,
+  };
+
+  let automationEvent: AutomationEvent | undefined;
+
+  if (deviceState.fanStatus !== currentDeviceState.fanStatus) {
+    automationEvent = {
+      device: "fan",
+      action: fanStatus,
+      triggeredBy: "simulation",
+      message:
+        fanStatus === "on"
+          ? `Fan activated because temperature reached ${sensorReading.temperature}°C.`
+          : "Fan deactivated because temperature returned below the trigger.",
+      createdAt: new Date().toISOString(),
+    };
+  } else if (deviceState.ledStatus !== currentDeviceState.ledStatus) {
+    automationEvent = {
+      device: "led",
+      action: ledStatus,
+      triggeredBy: "simulation",
+      message:
+        ledStatus === "on"
+          ? "LED schedule is active for the current mock time."
+          : "LED schedule is inactive for the current mock time.",
+      createdAt: new Date().toISOString(),
+    };
+  } else if (deviceState.pumpStatus !== currentDeviceState.pumpStatus) {
+    automationEvent = {
+      device: "pump",
+      action: pumpStatus,
+      triggeredBy: "simulation",
+      message:
+        pumpStatus === "on"
+          ? "Pump interval window is active for this simulation step."
+          : "Pump interval window has ended for this simulation step.",
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  return { deviceState, automationEvent };
+}
+
 export const mockDigitalTwinState: DigitalTwinState = {
   sensorReading: mockSensorReading,
   deviceState: mockDeviceState,
   alerts: generateAlerts(mockSensorReading, mockPlantProfile),
   recommendation: generateRecommendation(mockSensorReading, mockPlantProfile),
+  automationSettings: mockAutomationSettings,
 };

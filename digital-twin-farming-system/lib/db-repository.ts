@@ -1,11 +1,14 @@
 import {
   generateAlerts,
   generateRecommendation,
+  mockAutomationSettings,
   mockDeviceState,
   mockPlantProfile,
 } from "./mock-data";
 import type {
   Alert,
+  AutomationEvent,
+  AutomationSettings,
   DeviceState,
   DeviceStatus,
   DigitalTwinState,
@@ -15,10 +18,14 @@ import type {
 } from "./types";
 import type { SqlClient } from "./db";
 import {
+  mapAutomationEvent,
+  mapAutomationSettings,
   mapDeviceState,
   mapPlantProfile,
   mapRecommendation,
   mapSensorReading,
+  type AutomationLogRow,
+  type AutomationSettingsRow,
   type DeviceStateRow,
   type PlantProfileRow,
   type RecommendationRow,
@@ -103,6 +110,26 @@ export async function getLatestRecommendation(
   return rows[0] ? mapRecommendation(rows[0]) : null;
 }
 
+export async function getLatestAutomationSettings(
+  sql: SqlClient,
+): Promise<AutomationSettings | null> {
+  const rows = (await sql`
+    SELECT
+      mode,
+      led_start_time,
+      led_end_time,
+      led_spectrum,
+      fan_trigger_temperature,
+      pump_interval_minutes,
+      pump_duration_seconds
+    FROM automation_profiles
+    ORDER BY created_at DESC
+    LIMIT 1
+  `) as AutomationSettingsRow[];
+
+  return rows[0] ? mapAutomationSettings(rows[0]) : null;
+}
+
 export async function syncActiveAlerts(
   sql: SqlClient,
   alerts: Alert[],
@@ -137,6 +164,7 @@ export async function getDashboardState(sql: SqlClient): Promise<DigitalTwinStat
   const sensorReading = await getLatestSensorReading(sql);
   const deviceState = await getLatestDeviceState(sql);
   const plantProfile = await getActivePlantProfile(sql);
+  const automationSettings = await getLatestAutomationSettings(sql);
 
   if (!sensorReading) {
     throw new Error("No sensor readings found. Run db/migrations/001_init.sql first.");
@@ -154,6 +182,7 @@ export async function getDashboardState(sql: SqlClient): Promise<DigitalTwinStat
     alerts,
     recommendation:
       latestRecommendation ?? generateRecommendation(sensorReading, safePlantProfile),
+    automationSettings: automationSettings ?? mockAutomationSettings,
   };
 }
 
@@ -228,4 +257,64 @@ export async function insertRecommendation(
   }
 
   return mapRecommendation(rows[0]);
+}
+
+export async function insertAutomationProfile(
+  sql: SqlClient,
+  settings: AutomationSettings,
+): Promise<AutomationSettings> {
+  const rows = (await sql`
+    INSERT INTO automation_profiles (
+      mode,
+      led_start_time,
+      led_end_time,
+      led_spectrum,
+      fan_trigger_temperature,
+      pump_interval_minutes,
+      pump_duration_seconds
+    )
+    VALUES (
+      ${settings.mode},
+      ${settings.ledStartTime},
+      ${settings.ledEndTime},
+      ${settings.ledSpectrum},
+      ${settings.fanTriggerTemperature},
+      ${settings.pumpIntervalMinutes},
+      ${settings.pumpDurationSeconds}
+    )
+    RETURNING mode, led_start_time, led_end_time, led_spectrum, fan_trigger_temperature, pump_interval_minutes, pump_duration_seconds
+  `) as AutomationSettingsRow[];
+
+  if (!rows[0]) {
+    throw new Error("Automation profile insert did not return a row.");
+  }
+
+  return mapAutomationSettings(rows[0]);
+}
+
+export async function insertAutomationLog(
+  sql: SqlClient,
+  event: AutomationEvent,
+): Promise<AutomationEvent> {
+  const rows = (await sql`
+    INSERT INTO automation_logs (
+      device_type,
+      action,
+      triggered_by,
+      message
+    )
+    VALUES (
+      ${event.device},
+      ${event.action},
+      ${event.triggeredBy},
+      ${event.message}
+    )
+    RETURNING device_type, action, triggered_by, message, executed_at
+  `) as AutomationLogRow[];
+
+  if (!rows[0]) {
+    throw new Error("Automation log insert did not return a row.");
+  }
+
+  return mapAutomationEvent(rows[0]);
 }
