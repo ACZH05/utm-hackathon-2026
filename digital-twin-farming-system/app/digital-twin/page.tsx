@@ -22,16 +22,19 @@ const DynamicFarmScene = dynamic(
 );
 
 // --- MOCK DATA DICTIONARY ---
-const farmData: Record<string, {
-  title: string;
-  temp: string;
-  humidity: string;
-  moisture: string;
-  led: string;
-  vent: string;
-  pump: string;
-  pumpError: boolean;
-}> = {
+const farmData: Record<
+  string,
+  {
+    title: string;
+    temp: string;
+    humidity: string;
+    moisture: string;
+    led: string;
+    vent: string;
+    pump: string;
+    pumpError: boolean;
+  }
+> = {
   overall: {
     title: "Overall Farm Status",
     temp: "24°C",
@@ -59,6 +62,16 @@ const farmData: Record<string, {
     moisture: "82%",
     led: "ON (High)",
     vent: "AUTO",
+    pump: "OK",
+    pumpError: false,
+  },
+  led: {
+    title: "LED Light Array",
+    temp: "28°C",
+    humidity: "58%",
+    moisture: "N/A",
+    led: "ON (100%)",
+    vent: "ON (Full)",
     pump: "OK",
     pumpError: false,
   },
@@ -93,7 +106,9 @@ export default function DigitalTwin() {
         {/* --- 3D VIEWPORT --- */}
         <div className="lg:col-span-3 bg-slate-50 rounded-3xl shadow-inner border border-gray-200 overflow-hidden relative flex flex-col min-h-[50vh] lg:min-h-0">
           {/* Inject the dynamic 3D Scene */}
-          <DynamicFarmScene onSelectPart={setSelectedPart} />
+          <div className="absolute inset-0">
+            <DynamicFarmScene onSelectPart={setSelectedPart} />
+          </div>
 
           {/* Canvas UI Overlays */}
           <div className="absolute top-6 left-6 pointer-events-none">
@@ -182,7 +197,13 @@ export default function DigitalTwin() {
 }
 
 // --- SUB-COMPONENTS ---
-function DataRow({ icon, label, value }) {
+interface DataRowProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}
+
+function DataRow({ icon, label, value }: DataRowProps) {
   return (
     <div className="flex items-center justify-between pb-3 border-b border-green-500/30 last:border-0 last:pb-0">
       <div className="flex items-center gap-3 text-green-50 text-sm">
@@ -194,6 +215,15 @@ function DataRow({ icon, label, value }) {
   );
 }
 
+interface StatusCardProps {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  status: string;
+  isError?: boolean;
+  isWarning?: boolean;
+}
+
 function StatusCard({
   icon,
   title,
@@ -201,7 +231,7 @@ function StatusCard({
   status,
   isError = false,
   isWarning = false,
-}) {
+}: StatusCardProps) {
   let stateStyles = "bg-green-500/20 text-green-300 border-green-500/20";
   let iconBg = "bg-white/10 text-gray-300";
   let textTitle = "text-gray-100";
