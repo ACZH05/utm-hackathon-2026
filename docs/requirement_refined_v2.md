@@ -1,7 +1,7 @@
 # Refined MVP Requirements
 
 ## 1. Project Summary
-This MVP is a multi-page web demo for one vertical farming rack. The goal is to show a dashboard, a 3D digital twin, and an automated control system that help users monitor sensor data, visualize device states, automate agriculture tasks, see alerts, and receive AI-generated recommendations and automation settings for immediate control actions.
+This MVP is a multi-page web demo for one vertical farming rack. The goal is to show a dashboard, a 3D digital twin, and an automated control system that help users monitor sensor data, visualize device states, automate agriculture tasks, see alerts, and receive rule-based AI-assisted recommendations and automation settings for immediate control actions.
 
 ## 2. MVP Scope
 ### Must Have
@@ -10,17 +10,18 @@ This MVP is a multi-page web demo for one vertical farming rack. The goal is to 
 - One automated control system page for configuring automated agriculture tasks.
 - Threshold-based alerts for temperature, water level, water pH, and soil moisture.
 - Rule-based recommendation generation through FastAPI.
-- AI-assisted automation settings generation through FastAPI.
+- Rule-based AI-assisted automation settings generation through FastAPI.
 - Manual device status update for at least one device during the demo.
 - Manual automation scheduling for LED, fan, and water pump.
 - One-click AI automation configuration apply feature.
+- Simulated automatic device triggering based on the active automation settings.
 - Mock-first data flow shared across dashboard, automation page, and 3D twin.
 
 ### Nice to Have
 - Save records to Supabase or Neon after the mock flow is working.
 - More polished charts and component detail panels.
 - Optional hardware or IoT data input.
-- Optional OpenAI or LLM-generated wording for recommendations.
+- Optional OpenAI or LLM-generated wording for recommendations after the rule-based MVP works.
 - Automation history logs and execution timeline.
 - Electricity and water consumption estimation.
 
@@ -36,16 +37,16 @@ This MVP is a multi-page web demo for one vertical farming rack. The goal is to 
 | Member | Responsibility | Deliverables | Depends On |
 | --- | --- | --- | --- |
 | Member 1: 3D Digital Twin | Build the 3D rack visualization and component interaction | Rack scene, component color/status mapping, click handling, selected component panel | Shared interfaces and mock state from Member 3 |
-| Member 2: AI Engine | Build the recommendation and automation service | FastAPI `/recommendation` endpoint, FastAPI `/automation/recommend` endpoint, rule-based logic, sample input/output payloads | Shared interfaces and plant profile shape from Member 3 |
+| Member 2: AI Engine | Build the recommendation and automation service | FastAPI `/recommendation` endpoint, FastAPI `/automation/recommend` endpoint, deterministic rule-based logic, sample input/output payloads | Shared interfaces and plant profile shape from Member 3 |
 | Member 3: Frontend + Backend | Build UI, API routes, mock data flow, automation system, and integration | Dashboard page, automation page, Next.js API routes, mock data, device update flow, automation flow, FastAPI integration, shared interfaces | Recommendation response contract from Member 2 and twin prop contract for Member 1 |
 
 ## 4. Simple System Architecture
 - Next.js frontend displays three pages: a dashboard page, a 3D digital twin page, and an automated control system page.
 - Next.js API routes provide dashboard data, sensor history, device state updates, automation settings, and recommendation generation.
-- FastAPI exposes recommendation and automation endpoints and returns simple rule-based recommendations and automation settings based on the latest sensor reading and plant profile.
+- FastAPI exposes recommendation and automation endpoints and returns deterministic rule-based recommendations and AI-assisted automation settings based on the latest sensor reading and plant profile.
 - Supabase or Neon can store basic records after the mock flow works, but the first demo should run with mock data.
 - The 3D twin does not call the backend directly. It receives shared state from the parent page.
-- The automation system uses shared state and simulated execution flow for automatic device triggering.
+- The automation system uses shared state and a simulated execution flow for automatic device triggering. No real scheduler, hardware controller, OpenAI, or LLM service is required for the MVP.
 
 ## 5. Shared Data Interfaces
 ```ts
@@ -100,15 +101,24 @@ interface AutomationSettings {
 interface AIAutomationRecommendation {
   cropName: string;
 
-  recommendedLedHours: number;
-  recommendedSpectrum: string;
+  ledStartTime: string;
+  ledEndTime: string;
+  ledSpectrum: "blue" | "red" | "white" | "mixed";
 
-  recommendedFanTemperature: number;
+  fanTriggerTemperature: number;
 
-  recommendedPumpInterval: number;
-  recommendedPumpDuration: number;
+  pumpIntervalMinutes: number;
+  pumpDurationSeconds: number;
 
   confidence: number;
+}
+
+interface AutomationEvent {
+  device: "led" | "fan" | "pump";
+  action: "on" | "off";
+  triggeredBy: "manual" | "ai" | "simulation";
+  message: string;
+  createdAt: string;
 }
 
 interface DigitalTwinState {
@@ -196,7 +206,7 @@ Note: the UI can use `on` and `off` for manual device state, while `normal`, `wa
 - Owner: Member 3
 
 ### POST /api/automation/ai-generate
-- Purpose: Send latest sensor data and plant profile to FastAPI, then return AI-generated automation settings.
+- Purpose: Send latest sensor data and plant profile to FastAPI, then return rule-based AI-assisted automation settings.
 - Request body:
 ```ts
 {
@@ -220,7 +230,7 @@ Note: the UI can use `on` and `off` for manual device state, while `normal`, `wa
 - Owner: Member 3
 
 ### POST /api/automation/apply-ai
-- Purpose: Apply AI-generated automation settings directly to the current automation profile.
+- Purpose: Apply AI-assisted automation settings directly to the current automation profile.
 - Request body:
 ```ts
 {
@@ -233,6 +243,30 @@ Note: the UI can use `on` and `off` for manual device state, while `normal`, `wa
   automationSettings: AutomationSettings;
 }
 ```
+- Owner: Member 3
+
+### POST /api/automation/simulate
+- Purpose: Simulate automatic device triggering from the current sensor reading, active automation settings, and mock current time.
+- Request body:
+```ts
+{
+  sensorReading: SensorReading;
+  automationSettings: AutomationSettings;
+  mockCurrentTime: string;
+}
+```
+- Response body:
+```ts
+{
+  deviceState: DeviceState;
+  automationEvent?: AutomationEvent;
+}
+```
+- Simulation rules:
+  - LED turns `on` when `mockCurrentTime` is within `ledStartTime` and `ledEndTime`; otherwise it turns `off`.
+  - Fan turns `on` when `sensorReading.temperature >= fanTriggerTemperature`; otherwise it turns `off`.
+  - Pump turns `on` briefly according to `pumpIntervalMinutes` and `pumpDurationSeconds`; otherwise it turns `off`.
+  - Updated device state must be shared with the dashboard, automation page, and 3D twin.
 - Owner: Member 3
 
 ### PATCH /api/device
@@ -297,9 +331,10 @@ Note: the UI can use `on` and `off` for manual device state, while `normal`, `wa
 }
 ```
 - Rules:
-  - Start with rule-based logic only.
-  - Return one clear recommendation focused on immediate control action.
-  - Return AI-generated automation settings based on plant profile and latest sensor readings.
+  - Use deterministic rule-based logic only for the MVP.
+  - Return one clear recommendation focused on immediate control action from `/recommendation`.
+  - Return directly applicable AI-assisted automation settings from `/automation/recommend`.
+  - Base automation settings on plant profile thresholds and the latest sensor readings.
   - Do not connect FastAPI directly to the database.
   - Next.js is responsible for calling FastAPI.
 
@@ -336,11 +371,11 @@ interface SelectedComponent {
 
 ### automation_profiles
 - Important fields: mode, led_start_time, led_end_time, led_spectrum, fan_trigger_temperature, pump_interval_minutes, pump_duration_seconds, created_at
-- Purpose: Store manual and AI-generated automation settings
+- Purpose: Store manual and rule-based AI-assisted automation settings
 
 ### automation_logs
 - Important fields: device_type, action, triggered_by, executed_at
-- Purpose: Store automation execution history for demo playback and monitoring
+- Purpose: Optional stretch table for automation execution history and demo playback
 
 ### plant_profile
 - Important fields: crop_name, safe_temperature_range, safe_humidity_range, safe_soil_moisture_range, safe_water_ph_range, safe_water_level_range
@@ -351,8 +386,8 @@ interface SelectedComponent {
 2. Show the latest sensor data, active alerts, latest recommendation, and history chart.
 3. Open the automated control system page.
 4. Select a plant profile.
-5. Generate AI automation settings.
-6. Apply AI automation settings with one click.
+5. Generate rule-based AI-assisted automation settings.
+6. Apply AI-assisted automation settings with one click.
 7. Open the 3D digital twin page.
 8. Mock temperature becomes too high.
 9. A high-temperature alert appears on the dashboard.
@@ -371,7 +406,7 @@ interface SelectedComponent {
 
 ### Automated Control System
 - [ ] Allows manual automation scheduling for LED, fan, and pump.
-- [ ] Allows users to generate AI automation settings.
+- [ ] Allows users to generate rule-based AI-assisted automation settings.
 - [ ] Allows one-click AI automation apply.
 - [ ] Automatically triggers devices based on configured settings.
 - [ ] Shares consistent state with dashboard and 3D twin.
@@ -387,22 +422,23 @@ interface SelectedComponent {
 - [ ] Exposes one FastAPI POST /automation/recommend endpoint. 
 - [ ] Accepts latest sensor data and plant profile.
 - [ ] Returns one clear rule-based recommendation.
-- [ ] Returns AI-generated automation settings.
+- [ ] Returns directly applicable rule-based AI-assisted automation settings without requiring OpenAI or an LLM.
 
 ### Backend/API
 - [ ] `GET /api/dashboard` returns the latest dashboard state.
 - [ ] `GET /api/sensors/history` returns chart data.
 - [ ] `POST /api/recommendation/generate` calls FastAPI and returns one recommendation.
 - [ ] `POST /api/automation/manual` saves automation settings.
-- [ ] `POST /api/automation/ai-generate` calls FastAPI and returns AI automation settings.
-- [ ] `POST /api/automation/apply-ai` applies AI automation settings.
+- [ ] `POST /api/automation/ai-generate` calls FastAPI and returns rule-based AI-assisted automation settings.
+- [ ] `POST /api/automation/apply-ai` applies AI-assisted automation settings.
+- [ ] `POST /api/automation/simulate` returns simulated device state changes from the active automation settings.
 - [ ] `PATCH /api/device` updates one device status for demo use.
 
 ### Final Demo
 - [ ] The team can demonstrate the full flow using mock-first data.
 - [ ] An alert and recommendation can be triggered during the demo.
 - [ ] Automated device actions can be demonstrated during the demo.
-- [ ] AI automation configuration can be generated and applied.
+- [ ] Rule-based AI-assisted automation configuration can be generated and applied.
 - [ ] The dashboard and 3D twin stay consistent with the same shared state.
 
 ## 12. Development Order
