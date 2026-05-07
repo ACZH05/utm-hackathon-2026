@@ -1,6 +1,9 @@
 import type {
   Alert,
   AlertSeverity,
+  AutomationEvent,
+  AutomationMode,
+  AutomationSettings,
   DeviceState,
   DeviceStatus,
   PlantProfile,
@@ -10,6 +13,8 @@ import type {
 
 const deviceStatuses = ["normal", "warning", "critical", "off", "on"] as const;
 const alertSeverities = ["info", "warning", "critical"] as const;
+const automationModes = ["manual", "ai"] as const;
+const ledSpectrums = ["blue", "red", "white", "mixed"] as const;
 
 export interface SensorReadingRow {
   temperature: unknown;
@@ -54,6 +59,24 @@ export interface PlantProfileRow {
   safe_water_ph_max: unknown;
   safe_water_level_min: unknown;
   safe_water_level_max: unknown;
+}
+
+export interface AutomationSettingsRow {
+  mode: unknown;
+  led_start_time: unknown;
+  led_end_time: unknown;
+  led_spectrum: unknown;
+  fan_trigger_temperature: unknown;
+  pump_interval_minutes: unknown;
+  pump_duration_seconds: unknown;
+}
+
+export interface AutomationLogRow {
+  device_type: unknown;
+  action: unknown;
+  triggered_by: unknown;
+  message: unknown;
+  executed_at: unknown;
 }
 
 function toNumber(value: unknown): number {
@@ -105,6 +128,26 @@ function toAlertSeverity(value: unknown): AlertSeverity {
   }
 
   return severity as AlertSeverity;
+}
+
+function toAutomationMode(value: unknown): AutomationMode {
+  const mode = toString(value);
+
+  if (!automationModes.includes(mode as AutomationMode)) {
+    throw new Error(`Unexpected automation mode: ${mode}`);
+  }
+
+  return mode as AutomationMode;
+}
+
+function toLedSpectrum(value: unknown): "blue" | "red" | "white" | "mixed" {
+  const spectrum = toString(value);
+
+  if (!ledSpectrums.includes(spectrum as "blue" | "red" | "white" | "mixed")) {
+    throw new Error(`Unexpected LED spectrum: ${spectrum}`);
+  }
+
+  return spectrum as "blue" | "red" | "white" | "mixed";
 }
 
 export function mapSensorReading(row: SensorReadingRow): SensorReading {
@@ -166,5 +209,31 @@ export function mapPlantProfile(row: PlantProfileRow): PlantProfile {
       toNumber(row.safe_water_level_min),
       toNumber(row.safe_water_level_max),
     ],
+  };
+}
+
+export function mapAutomationSettings(row: AutomationSettingsRow): AutomationSettings {
+  return {
+    mode: toAutomationMode(row.mode),
+    ledStartTime: toString(row.led_start_time),
+    ledEndTime: toString(row.led_end_time),
+    ledSpectrum: toLedSpectrum(row.led_spectrum),
+    fanTriggerTemperature: toNumber(row.fan_trigger_temperature),
+    pumpIntervalMinutes: toNumber(row.pump_interval_minutes),
+    pumpDurationSeconds: toNumber(row.pump_duration_seconds),
+  };
+}
+
+export function mapAutomationEvent(row: AutomationLogRow): AutomationEvent {
+  const device = toString(row.device_type);
+  const action = toString(row.action);
+  const triggeredBy = toString(row.triggered_by);
+
+  return {
+    device: device as "led" | "fan" | "pump",
+    action: action as "on" | "off",
+    triggeredBy: triggeredBy as "manual" | "ai" | "simulation",
+    message: row.message ? toString(row.message) : "",
+    createdAt: toIsoString(row.executed_at),
   };
 }

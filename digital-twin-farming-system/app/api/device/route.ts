@@ -7,6 +7,7 @@ import {
   insertDeviceStateSnapshot,
 } from "@/lib/db-repository";
 import { mockDeviceState } from "@/lib/mock-data";
+import { updateMockDeviceStatus } from "@/lib/mock-state";
 import type { DeviceStatus } from "@/lib/types";
 
 const validDevices = ["led", "fan", "pump", "reservoir"] as const;
@@ -44,7 +45,7 @@ export async function PATCH(request: Request) {
 
   if (!sql) {
     return NextResponse.json({
-      deviceState: applyDeviceStatus(mockDeviceState, body.device, body.status),
+      deviceState: updateMockDeviceStatus(body.device, body.status),
     });
   }
 

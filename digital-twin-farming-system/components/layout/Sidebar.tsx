@@ -9,11 +9,13 @@ import {
   Settings,
   FileText,
   Leaf,
-  Activity
+  Activity,
+  Bot
 } from "lucide-react"
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Automation", href: "/automation", icon: Bot },
   { name: "Digital Twin", href: "/digital-twin", icon: Box },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Statistics", href: "/statistics", icon: Activity },
