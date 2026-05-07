@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
   Environment,
@@ -10,9 +10,42 @@ import {
   useBounds,
 } from "@react-three/drei";
 import * as THREE from "three";
-import { suppressDeprecationWarnings } from "@/lib/suppress-warnings";
 import { ProceduralFarm } from "./ProceduralFarm";
 
+// --- HOOK: Safe WebGL HMR Cleanup ---
+function WebGLCleanup() {
+  const { gl } = useThree();
+  useEffect(() => {
+    return () => {
+      // Safely tell Three.js to dump its memory without crashing
+      setTimeout(() => {
+        gl.dispose();
+      }, 0);
+    };
+  }, [gl]);
+  return null;
+}
+
+// --- HOOK: WebGL Crash Guard ---
+function WebGLCrashGuard() {
+  const { gl } = useThree();
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const handleContextLoss = (event: Event) => {
+      event.preventDefault();
+      console.error(
+        "🚨 WebGL Context Lost! The GPU was overloaded. Refreshing...",
+      );
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLoss, false);
+    return () => {
+      canvas.removeEventListener("webglcontextlost", handleContextLoss);
+    };
+  }, [gl]);
+  return null;
+}
+
+// Helper to handle the "Click to Zoom" logic
 function SelectToZoom({
   children,
   onReset,
@@ -44,16 +77,8 @@ export default function FarmScene({
 }: {
   onSelectPart: (part: string) => void;
 }) {
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      suppressDeprecationWarnings();
-    }
-  }, []);
-
   return (
     <Canvas
-      className="w-full h-full"
-      style={{ height: "100%", width: "100%" }}
       camera={{ position: [6, 5, 7], fov: 45 }}
       shadows
       gl={{ antialias: true, alpha: true }}
@@ -61,6 +86,9 @@ export default function FarmScene({
         gl.shadowMap.type = THREE.PCFShadowMap;
       }}
     >
+      <WebGLCleanup />
+      <WebGLCrashGuard />
+
       <ambientLight intensity={0.5} />
       <directionalLight
         position={[10, 10, 5]}
