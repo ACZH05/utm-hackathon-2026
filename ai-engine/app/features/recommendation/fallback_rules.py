@@ -1,9 +1,5 @@
-from app.features.recommendation.schemas import (
-    PlantProfile,
-    Recommendation,
-    RecommendationRequest,
-    SensorReading,
-)
+from app.features.recommendation.schemas import Recommendation, RecommendationRequest
+from app.features.shared.schemas import PlantProfile, SensorReading
 
 
 def build_fallback_recommendation(
