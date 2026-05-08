@@ -108,8 +108,32 @@ export default function Dashboard() {
 
   if (isLoading && !dashboardState) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <div className="text-xl font-semibold text-gray-500 animate-pulse">Loading dashboard data...</div>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Farming Dashboard</h1>
+            <p className="text-gray-500">Overview of your vertical farm operations</p>
+          </div>
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 rounded-full bg-gray-100 animate-pulse" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 animate-pulse">
+          <div className="h-[76px] rounded-2xl bg-gray-100" />
+          <div className="h-[76px] rounded-2xl bg-gray-100" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-[140px] rounded-3xl bg-gray-100" />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-pulse">
+          <div className="h-[350px] rounded-3xl bg-gray-100" />
+          <div className="h-[350px] rounded-3xl bg-gray-100" />
+        </div>
       </div>
     );
   }

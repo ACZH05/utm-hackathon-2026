@@ -199,7 +199,7 @@ export default function DigitalTwin() {
     selected?.type === "reservoir";
 
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-4rem)] flex flex-col p-4 md:p-6 lg:p-8">
+    <div className="max-w-7xl mx-auto h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="min-w-0 pr-4">
           <h1 className="text-3xl font-bold text-gray-900 truncate">
