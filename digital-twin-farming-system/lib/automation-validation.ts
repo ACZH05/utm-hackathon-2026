@@ -43,6 +43,7 @@ export function parseAutomationSettings(value: unknown): AutomationSettings | nu
   }
 
   if (
+    typeof value.trayId !== "string" ||
     !isAutomationMode(value.mode) ||
     !isTime(value.ledStartTime) ||
     !isTime(value.ledEndTime) ||
@@ -59,6 +60,7 @@ export function parseAutomationSettings(value: unknown): AutomationSettings | nu
   }
 
   return {
+    trayId: value.trayId,
     mode: value.mode,
     ledStartTime: value.ledStartTime,
     ledEndTime: value.ledEndTime,
@@ -77,6 +79,7 @@ export function parseAutomationRecommendation(
   }
 
   if (
+    typeof value.trayId !== "string" ||
     typeof value.cropName !== "string" ||
     !isTime(value.ledStartTime) ||
     !isTime(value.ledEndTime) ||
@@ -99,6 +102,7 @@ export function parseAutomationRecommendation(
   }
 
   return {
+    trayId: value.trayId,
     cropName: value.cropName,
     ledStartTime: value.ledStartTime,
     ledEndTime: value.ledEndTime,
@@ -116,6 +120,7 @@ export function parseSensorReading(value: unknown): SensorReading | null {
   }
 
   if (
+    typeof value.trayId !== "string" ||
     !isNumber(value.temperature) ||
     !isNumber(value.humidity) ||
     !isNumber(value.soilMoisture) ||
@@ -127,6 +132,7 @@ export function parseSensorReading(value: unknown): SensorReading | null {
   }
 
   return {
+    trayId: value.trayId,
     temperature: value.temperature,
     humidity: value.humidity,
     soilMoisture: value.soilMoisture,

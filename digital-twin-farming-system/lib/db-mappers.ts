@@ -7,8 +7,10 @@ import type {
   DeviceState,
   DeviceStatus,
   PlantProfile,
+  Rack,
   Recommendation,
   SensorReading,
+  Tray,
 } from "./types";
 
 const deviceStatuses = ["normal", "warning", "critical", "off", "on"] as const;
@@ -16,7 +18,22 @@ const alertSeverities = ["info", "warning", "critical"] as const;
 const automationModes = ["manual", "ai"] as const;
 const ledSpectrums = ["blue", "red", "white", "mixed"] as const;
 
+export interface RackRow {
+  id: unknown;
+  name: unknown;
+  created_at: unknown;
+}
+
+export interface TrayRow {
+  id: unknown;
+  rack_id: unknown;
+  name: unknown;
+  plant_profile_id: unknown;
+  created_at: unknown;
+}
+
 export interface SensorReadingRow {
+  tray_id: unknown;
   temperature: unknown;
   humidity: unknown;
   soil_moisture: unknown;
@@ -26,6 +43,7 @@ export interface SensorReadingRow {
 }
 
 export interface DeviceStateRow {
+  tray_id: unknown;
   led_status: unknown;
   fan_status: unknown;
   pump_status: unknown;
@@ -33,6 +51,7 @@ export interface DeviceStateRow {
 }
 
 export interface AlertRow {
+  tray_id: unknown;
   type: unknown;
   severity: unknown;
   message: unknown;
@@ -40,6 +59,7 @@ export interface AlertRow {
 }
 
 export interface RecommendationRow {
+  tray_id: unknown;
   title: unknown;
   message: unknown;
   suggested_action: unknown;
@@ -48,6 +68,7 @@ export interface RecommendationRow {
 }
 
 export interface PlantProfileRow {
+  id: unknown;
   crop_name: unknown;
   safe_temperature_min: unknown;
   safe_temperature_max: unknown;
@@ -62,6 +83,7 @@ export interface PlantProfileRow {
 }
 
 export interface AutomationSettingsRow {
+  tray_id: unknown;
   mode: unknown;
   led_start_time: unknown;
   led_end_time: unknown;
@@ -72,8 +94,10 @@ export interface AutomationSettingsRow {
 }
 
 export interface AutomationLogRow {
-  device_type: unknown;
-  action: unknown;
+  tray_id: unknown;
+  led_status: unknown;
+  fan_status: unknown;
+  pump_status: unknown;
   triggered_by: unknown;
   message: unknown;
   executed_at: unknown;
@@ -91,11 +115,14 @@ function toNumber(value: unknown): number {
 }
 
 function toString(value: unknown): string {
-  if (typeof value !== "string") {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value !== "string" && typeof value !== "number" && typeof value !== "bigint") {
     throw new Error(`Expected text database value, received ${String(value)}`);
   }
 
-  return value;
+  return String(value);
 }
 
 function toIsoString(value: unknown): string {
@@ -150,8 +177,27 @@ function toLedSpectrum(value: unknown): "blue" | "red" | "white" | "mixed" {
   return spectrum as "blue" | "red" | "white" | "mixed";
 }
 
+export function mapRack(row: RackRow): Rack {
+  return {
+    id: toString(row.id),
+    name: toString(row.name),
+    createdAt: toIsoString(row.created_at),
+  };
+}
+
+export function mapTray(row: TrayRow): Tray {
+  return {
+    id: toString(row.id),
+    rackId: toString(row.rack_id),
+    name: toString(row.name),
+    plantProfileId: row.plant_profile_id ? toString(row.plant_profile_id) : undefined,
+    createdAt: toIsoString(row.created_at),
+  };
+}
+
 export function mapSensorReading(row: SensorReadingRow): SensorReading {
   return {
+    trayId: toString(row.tray_id),
     temperature: toNumber(row.temperature),
     humidity: toNumber(row.humidity),
     soilMoisture: toNumber(row.soil_moisture),
@@ -163,6 +209,7 @@ export function mapSensorReading(row: SensorReadingRow): SensorReading {
 
 export function mapDeviceState(row: DeviceStateRow): DeviceState {
   return {
+    trayId: toString(row.tray_id),
     ledStatus: toDeviceStatus(row.led_status),
     fanStatus: toDeviceStatus(row.fan_status),
     pumpStatus: toDeviceStatus(row.pump_status),
@@ -172,6 +219,7 @@ export function mapDeviceState(row: DeviceStateRow): DeviceState {
 
 export function mapAlert(row: AlertRow): Alert {
   return {
+    trayId: toString(row.tray_id),
     type: toString(row.type),
     severity: toAlertSeverity(row.severity),
     message: toString(row.message),
@@ -181,6 +229,7 @@ export function mapAlert(row: AlertRow): Alert {
 
 export function mapRecommendation(row: RecommendationRow): Recommendation {
   return {
+    trayId: toString(row.tray_id),
     title: toString(row.title),
     message: toString(row.message),
     suggestedAction: toString(row.suggested_action),
@@ -191,6 +240,7 @@ export function mapRecommendation(row: RecommendationRow): Recommendation {
 
 export function mapPlantProfile(row: PlantProfileRow): PlantProfile {
   return {
+    id: toString(row.id),
     cropName: toString(row.crop_name),
     safeTemperatureRange: [
       toNumber(row.safe_temperature_min),
@@ -214,6 +264,7 @@ export function mapPlantProfile(row: PlantProfileRow): PlantProfile {
 
 export function mapAutomationSettings(row: AutomationSettingsRow): AutomationSettings {
   return {
+    trayId: toString(row.tray_id),
     mode: toAutomationMode(row.mode),
     ledStartTime: toString(row.led_start_time),
     ledEndTime: toString(row.led_end_time),
@@ -225,13 +276,13 @@ export function mapAutomationSettings(row: AutomationSettingsRow): AutomationSet
 }
 
 export function mapAutomationEvent(row: AutomationLogRow): AutomationEvent {
-  const device = toString(row.device_type);
-  const action = toString(row.action);
   const triggeredBy = toString(row.triggered_by);
 
   return {
-    device: device as "led" | "fan" | "pump",
-    action: action as "on" | "off",
+    trayId: toString(row.tray_id),
+    ledStatus: row.led_status ? toDeviceStatus(row.led_status) : undefined,
+    fanStatus: row.fan_status ? toDeviceStatus(row.fan_status) : undefined,
+    pumpStatus: row.pump_status ? toDeviceStatus(row.pump_status) : undefined,
     triggeredBy: triggeredBy as "manual" | "ai" | "simulation",
     message: row.message ? toString(row.message) : "",
     createdAt: toIsoString(row.executed_at),

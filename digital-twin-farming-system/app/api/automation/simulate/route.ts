@@ -17,6 +17,7 @@ import { getMockDashboardState, runMockAutomationSimulation } from "@/lib/mock-s
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const mockCurrentTime = parseMockCurrentTime(body.mockCurrentTime);
+  const trayId = body.trayId as string | undefined;
 
   if (!mockCurrentTime) {
     return NextResponse.json(
@@ -27,15 +28,19 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!trayId) {
+    return NextResponse.json({ error: "trayId is required" }, { status: 400 });
+  }
+
   const sql = getSql();
 
   if (!sql) {
     const currentState = getMockDashboardState();
     const sensorReading =
-      parseSensorReading(body.sensorReading) ?? currentState.sensorReading;
+      parseSensorReading(body.sensorReading) ?? { ...currentState.sensorReading, trayId };
     const automationSettings =
       parseAutomationSettings(body.automationSettings) ??
-      currentState.automationSettings;
+      { ...currentState.automationSettings, trayId };
 
     return NextResponse.json(
       runMockAutomationSimulation(
@@ -47,7 +52,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const dashboardState = await getDashboardState(sql);
+    const dashboardState = await getDashboardState(sql, trayId);
     const sensorReading =
       parseSensorReading(body.sensorReading) ?? dashboardState.sensorReading;
     const automationSettings =

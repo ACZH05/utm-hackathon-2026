@@ -31,8 +31,7 @@ export async function POST(request: Request) {
     const savedSettings = await insertAutomationProfile(sql, automationSettings);
 
     await insertAutomationLog(sql, {
-      device: "led",
-      action: "on",
+      trayId: automationSettings.trayId,
       triggeredBy: "manual",
       message: "Manual automation profile saved for LED, fan, and pump.",
       createdAt: new Date().toISOString(),

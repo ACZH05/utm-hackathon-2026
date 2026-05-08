@@ -10,7 +10,10 @@ import type {
   SensorReading,
 } from "./types";
 
+export const MOCK_TRAY_ID = "1";
+
 export const mockPlantProfile: PlantProfile = {
+  id: "1",
   cropName: "Lettuce",
   safeTemperatureRange: [18, 26],
   safeHumidityRange: [50, 75],
@@ -20,6 +23,7 @@ export const mockPlantProfile: PlantProfile = {
 };
 
 export const mockSensorReading: SensorReading = {
+  trayId: MOCK_TRAY_ID,
   temperature: 31.8,
   humidity: 67,
   soilMoisture: 58,
@@ -30,6 +34,7 @@ export const mockSensorReading: SensorReading = {
 
 export const mockSensorHistory: SensorReading[] = [
   {
+    trayId: MOCK_TRAY_ID,
     temperature: 24.1,
     humidity: 62,
     soilMoisture: 64,
@@ -38,6 +43,7 @@ export const mockSensorHistory: SensorReading[] = [
     createdAt: "2026-05-05T01:00:00.000Z",
   },
   {
+    trayId: MOCK_TRAY_ID,
     temperature: 24.8,
     humidity: 63,
     soilMoisture: 63,
@@ -46,6 +52,7 @@ export const mockSensorHistory: SensorReading[] = [
     createdAt: "2026-05-05T02:00:00.000Z",
   },
   {
+    trayId: MOCK_TRAY_ID,
     temperature: 25.6,
     humidity: 64,
     soilMoisture: 61,
@@ -54,6 +61,7 @@ export const mockSensorHistory: SensorReading[] = [
     createdAt: "2026-05-05T03:00:00.000Z",
   },
   {
+    trayId: MOCK_TRAY_ID,
     temperature: 26.9,
     humidity: 65,
     soilMoisture: 60,
@@ -62,6 +70,7 @@ export const mockSensorHistory: SensorReading[] = [
     createdAt: "2026-05-05T04:00:00.000Z",
   },
   {
+    trayId: MOCK_TRAY_ID,
     temperature: 28.4,
     humidity: 66,
     soilMoisture: 59,
@@ -70,6 +79,7 @@ export const mockSensorHistory: SensorReading[] = [
     createdAt: "2026-05-05T05:00:00.000Z",
   },
   {
+    trayId: MOCK_TRAY_ID,
     temperature: 29.6,
     humidity: 67,
     soilMoisture: 58,
@@ -78,6 +88,7 @@ export const mockSensorHistory: SensorReading[] = [
     createdAt: "2026-05-05T06:00:00.000Z",
   },
   {
+    trayId: MOCK_TRAY_ID,
     temperature: 30.5,
     humidity: 67,
     soilMoisture: 58,
@@ -89,6 +100,7 @@ export const mockSensorHistory: SensorReading[] = [
 ];
 
 export const mockDeviceState: DeviceState = {
+  trayId: MOCK_TRAY_ID,
   ledStatus: "on",
   fanStatus: "off",
   pumpStatus: "normal",
@@ -96,6 +108,7 @@ export const mockDeviceState: DeviceState = {
 };
 
 export const mockAutomationSettings: AutomationSettings = {
+  trayId: MOCK_TRAY_ID,
   mode: "manual",
   ledStartTime: "06:00",
   ledEndTime: "20:00",
@@ -111,6 +124,7 @@ export function generateAlerts(
 ): Alert[] {
   const alerts: Alert[] = [];
   const createdAt = sensorReading.createdAt;
+  const trayId = sensorReading.trayId;
   const [
     safeTemperatureMinimum,
     safeTemperatureMaximum,
@@ -124,6 +138,7 @@ export function generateAlerts(
 
   if (sensorReading.waterLevel < safeWaterLevelMinimum) {
     alerts.push({
+      trayId,
       type: "water-level",
       severity: "critical",
       message: `Water level is below the ${plantProfile.cropName} safe minimum of ${safeWaterLevelMinimum}%.`,
@@ -133,6 +148,7 @@ export function generateAlerts(
 
   if (sensorReading.temperature > safeTemperatureMaximum) {
     alerts.push({
+      trayId,
       type: "temperature",
       severity: "warning",
       message: `Temperature is above the ${plantProfile.cropName} safe range of ${safeTemperatureMinimum}-${safeTemperatureMaximum}°C.`,
@@ -142,6 +158,7 @@ export function generateAlerts(
 
   if (sensorReading.temperature < safeTemperatureMinimum) {
     alerts.push({
+      trayId,
       type: "temperature",
       severity: "warning",
       message: `Temperature is below the ${plantProfile.cropName} safe range of ${safeTemperatureMinimum}-${safeTemperatureMaximum}°C.`,
@@ -151,6 +168,7 @@ export function generateAlerts(
 
   if (sensorReading.soilMoisture < safeSoilMoistureMinimum) {
     alerts.push({
+      trayId,
       type: "soil-moisture",
       severity: "warning",
       message: `Soil moisture is below the ${plantProfile.cropName} safe minimum of ${safeSoilMoistureMinimum}%.`,
@@ -163,6 +181,7 @@ export function generateAlerts(
     sensorReading.waterPh > safeWaterPhMaximum
   ) {
     alerts.push({
+      trayId,
       type: "water-ph",
       severity: "warning",
       message: `Water pH is outside the ${plantProfile.cropName} safe range of ${safeWaterPhMinimum}-${safeWaterPhMaximum}.`,
@@ -182,9 +201,11 @@ export function generateRecommendation(
   const [safeWaterPhMinimum, safeWaterPhMaximum] =
     plantProfile.safeWaterPhRange;
   const [safeWaterLevelMinimum] = plantProfile.safeWaterLevelRange;
+  const trayId = sensorReading.trayId;
 
   if (sensorReading.waterLevel < safeWaterLevelMinimum) {
     return {
+      trayId,
       title: "Refill water reservoir",
       message: `${plantProfile.cropName} water level is below the safe minimum. Refill the reservoir before running another irrigation cycle.`,
       suggestedAction: "Refill reservoir",
@@ -195,6 +216,7 @@ export function generateRecommendation(
 
   if (sensorReading.temperature > safeTemperatureMaximum) {
     return {
+      trayId,
       title: "Turn on cooling fan",
       message: `${plantProfile.cropName} rack temperature is too high. Turn on the fan to bring the rack back into the safe range.`,
       suggestedAction: "Set fan status to on",
@@ -205,6 +227,7 @@ export function generateRecommendation(
 
   if (sensorReading.soilMoisture < safeSoilMoistureMinimum) {
     return {
+      trayId,
       title: "Run water pump",
       message: `${plantProfile.cropName} soil moisture is below the safe minimum. Run a short watering cycle to recover moisture levels.`,
       suggestedAction: "Set pump status to on",
@@ -218,6 +241,7 @@ export function generateRecommendation(
     sensorReading.waterPh > safeWaterPhMaximum
   ) {
     return {
+      trayId,
       title: "Adjust nutrient pH",
       message: `${plantProfile.cropName} water pH is outside the safe range. Check the reservoir and adjust the nutrient mixture.`,
       suggestedAction: "Inspect reservoir pH",
@@ -227,6 +251,7 @@ export function generateRecommendation(
   }
 
   return {
+    trayId,
     title: "Conditions stable",
     message: `${plantProfile.cropName} readings are within the safe operating ranges. Continue monitoring the rack.`,
     suggestedAction: "Keep current device settings",
@@ -244,6 +269,7 @@ export function generateAutomationRecommendation(
   const soilMoistureIsLow = sensorReading.soilMoisture < safeSoilMoistureMinimum;
 
   return {
+    trayId: sensorReading.trayId,
     cropName: plantProfile.cropName,
     ledStartTime: "06:00",
     ledEndTime: "20:00",
@@ -259,6 +285,7 @@ export function applyAutomationRecommendation(
   aiAutomationRecommendation: AIAutomationRecommendation,
 ): AutomationSettings {
   return {
+    trayId: aiAutomationRecommendation.trayId,
     mode: "ai",
     ledStartTime: aiAutomationRecommendation.ledStartTime,
     ledEndTime: aiAutomationRecommendation.ledEndTime,
@@ -336,40 +363,29 @@ export function simulateAutomation(
   };
 
   let automationEvent: AutomationEvent | undefined;
+  const changedDevices: string[] = [];
+  const event: Partial<AutomationEvent> = {
+    trayId: currentDeviceState.trayId,
+    triggeredBy: "simulation",
+    createdAt: new Date().toISOString(),
+  };
 
-  if (deviceState.fanStatus !== currentDeviceState.fanStatus) {
-    automationEvent = {
-      device: "fan",
-      action: fanStatus,
-      triggeredBy: "simulation",
-      message:
-        fanStatus === "on"
-          ? `Fan activated because temperature reached ${sensorReading.temperature}°C.`
-          : "Fan deactivated because temperature returned below the trigger.",
-      createdAt: new Date().toISOString(),
-    };
-  } else if (deviceState.ledStatus !== currentDeviceState.ledStatus) {
-    automationEvent = {
-      device: "led",
-      action: ledStatus,
-      triggeredBy: "simulation",
-      message:
-        ledStatus === "on"
-          ? "LED schedule is active for the current mock time."
-          : "LED schedule is inactive for the current mock time.",
-      createdAt: new Date().toISOString(),
-    };
-  } else if (deviceState.pumpStatus !== currentDeviceState.pumpStatus) {
-    automationEvent = {
-      device: "pump",
-      action: pumpStatus,
-      triggeredBy: "simulation",
-      message:
-        pumpStatus === "on"
-          ? "Pump interval window is active for this simulation step."
-          : "Pump interval window has ended for this simulation step.",
-      createdAt: new Date().toISOString(),
-    };
+  if (ledStatus !== currentDeviceState.ledStatus) {
+    event.ledStatus = ledStatus;
+    changedDevices.push("LED");
+  }
+  if (fanStatus !== currentDeviceState.fanStatus) {
+    event.fanStatus = fanStatus;
+    changedDevices.push("Fan");
+  }
+  if (pumpStatus !== currentDeviceState.pumpStatus) {
+    event.pumpStatus = pumpStatus;
+    changedDevices.push("Pump");
+  }
+
+  if (changedDevices.length > 0) {
+    event.message = `${changedDevices.join(" and ")} state changed based on automation rules.`;
+    automationEvent = event as AutomationEvent;
   }
 
   return { deviceState, automationEvent };
