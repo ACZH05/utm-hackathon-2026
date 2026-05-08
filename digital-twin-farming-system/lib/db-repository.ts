@@ -420,3 +420,19 @@ export async function insertAutomationLog(
 
   return mapAutomationEvent(rows[0]);
 }
+
+export async function getAutomationLogs(
+  sql: SqlClient,
+  trayId: string,
+  limit = 10,
+): Promise<AutomationEvent[]> {
+  const rows = (await sql`
+    SELECT tray_id, led_status, fan_status, pump_status, triggered_by, message, executed_at
+    FROM automation_logs
+    WHERE tray_id = ${trayId}
+    ORDER BY executed_at DESC
+    LIMIT ${limit}
+  `) as AutomationLogRow[];
+
+  return rows.map(mapAutomationEvent);
+}

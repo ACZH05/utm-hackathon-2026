@@ -25,7 +25,7 @@ let currentPlantProfile: PlantProfile = mockPlantProfile;
 let currentDeviceState: DeviceState = mockDeviceState;
 let currentAutomationSettings: AutomationSettings = mockAutomationSettings;
 let latestAutomationRecommendation: AIAutomationRecommendation | null = null;
-let latestAutomationEvent: AutomationEvent | null = null;
+const automationLogs: AutomationEvent[] = [];
 
 function applyMockDeviceStatus(
   deviceState: DeviceState,
@@ -58,18 +58,29 @@ export function getMockPlantProfile(): PlantProfile {
   return currentPlantProfile;
 }
 
+export function getMockAutomationLogs(trayId: string, limit = 10): AutomationEvent[] {
+  return automationLogs
+    .filter((log) => log.trayId === trayId)
+    .slice(-limit)
+    .reverse();
+}
+
 export function saveMockAutomationSettings(
   automationSettings: AutomationSettings,
 ): AutomationSettings {
   currentAutomationSettings = automationSettings;
   latestAutomationRecommendation = null;
-  latestAutomationEvent = {
-    device: "led",
-    action: "on",
+
+  const event: AutomationEvent = {
+    trayId: automationSettings.trayId,
+    ledStatus: "on",
+    fanStatus: "off",
+    pumpStatus: "off",
     triggeredBy: "manual",
     message: "Manual automation profile saved for LED, fan, and pump.",
     createdAt: new Date().toISOString(),
   };
+  automationLogs.push(event);
 
   return currentAutomationSettings;
 }
@@ -93,13 +104,17 @@ export function applyMockAutomationRecommendation(
 ): AutomationSettings {
   latestAutomationRecommendation = aiAutomationRecommendation;
   currentAutomationSettings = applyAutomationRecommendation(aiAutomationRecommendation);
-  latestAutomationEvent = {
-    device: "led",
-    action: "on",
+
+  const event: AutomationEvent = {
+    trayId: aiAutomationRecommendation.trayId,
+    ledStatus: "on",
+    fanStatus: "off",
+    pumpStatus: "off",
     triggeredBy: "ai",
     message: `AI-assisted automation profile applied for ${aiAutomationRecommendation.cropName}.`,
     createdAt: new Date().toISOString(),
   };
+  automationLogs.push(event);
 
   return currentAutomationSettings;
 }
@@ -120,11 +135,13 @@ export function runMockAutomationSimulation(
   );
 
   currentDeviceState = result.deviceState;
-  latestAutomationEvent = result.automationEvent ?? latestAutomationEvent;
+  if (result.automationEvent) {
+    automationLogs.push(result.automationEvent);
+  }
 
   return {
     deviceState: currentDeviceState,
-    automationEvent: result.automationEvent ?? latestAutomationEvent ?? undefined,
+    automationEvent: result.automationEvent ?? undefined,
   };
 }
 
@@ -142,5 +159,5 @@ export function getLatestAutomationRecommendation() {
 }
 
 export function getLatestAutomationEvent() {
-  return latestAutomationEvent;
+  return automationLogs.length > 0 ? automationLogs[automationLogs.length - 1] : null;
 }

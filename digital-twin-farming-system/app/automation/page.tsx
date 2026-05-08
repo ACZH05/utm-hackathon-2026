@@ -6,6 +6,7 @@ import {
   Clock3,
   Droplets,
   Fan,
+  History,
   Layers,
   LayoutGrid,
   Lightbulb,
@@ -93,9 +94,21 @@ export default function AutomationPage() {
   const [automationEvent, setAutomationEvent] = useState<AutomationEvent | null>(
     null,
   );
+  const [automationLogs, setAutomationLogs] = useState<AutomationEvent[]>([]);
   const [mockCurrentTime, setMockCurrentTime] = useState("12:00");
   const [statusMessage, setStatusMessage] = useState("Loading racks...");
   const [isBusy, setIsBusy] = useState(false);
+
+  async function loadLogs(trayId: string) {
+    try {
+      const response = await fetch(`/api/automation/logs?trayId=${trayId}&limit=10`);
+      const data = (await response.json()) as AutomationEvent[];
+      if (!Array.isArray(data)) return;
+      setAutomationLogs(data);
+    } catch (err) {
+      console.error("Failed to load automation logs:", err);
+    }
+  }
 
   // Initial load of racks
   useEffect(() => {
@@ -130,7 +143,7 @@ export default function AutomationPage() {
     loadTrays().catch(() => setStatusMessage("Failed to load trays."));
   }, [selectedRackId]);
 
-  // Load dashboard when tray changes
+  // Load dashboard and logs when tray changes
   useEffect(() => {
     async function loadDashboardState(trayId: string) {
       if (!trayId) return;
@@ -147,6 +160,9 @@ export default function AutomationPage() {
         setAiRecommendation(null);
         setAutomationEvent(null);
         setStatusMessage(`Tray ${trayId} loaded.`);
+
+        // Also load logs
+        void loadLogs(trayId);
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : "Unable to load automation state.";
@@ -211,6 +227,7 @@ export default function AutomationPage() {
           : current,
       );
       setStatusMessage("Manual automation profile saved.");
+      void loadLogs(selectedTrayId);
     } catch (error) {
       setStatusMessage(
         error instanceof Error ? error.message : "Unable to save manual settings.",
@@ -269,6 +286,7 @@ export default function AutomationPage() {
           : current,
       );
       setStatusMessage("AI-assisted automation profile applied.");
+      void loadLogs(selectedTrayId);
     } catch (error) {
       setStatusMessage(
         error instanceof Error ? error.message : "Unable to apply AI settings.",
@@ -296,6 +314,7 @@ export default function AutomationPage() {
       setSimulatedDeviceState(payload.deviceState);
       setAutomationEvent(payload.automationEvent ?? null);
       setStatusMessage("Automation simulation complete.");
+      void loadLogs(selectedTrayId);
     } catch (error) {
       setStatusMessage(
         error instanceof Error ? error.message : "Unable to run simulation.",
@@ -706,6 +725,79 @@ export default function AutomationPage() {
           </div>
         </section>
       </div>
+
+      <section className="rounded-3xl bg-card p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Automation History
+            </h2>
+            <p className="text-sm text-gray-500">
+              Recent automation events and logs for this tray
+            </p>
+          </div>
+          <History className="h-6 w-6 text-primary" />
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-gray-400">
+                <th className="pb-4 font-semibold">Time</th>
+                <th className="pb-4 font-semibold">Source</th>
+                <th className="pb-4 font-semibold">Message</th>
+                <th className="pb-4 font-semibold">Statuses</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {automationLogs.length > 0 ? (
+                automationLogs.map((log, idx) => (
+                  <tr key={idx} className="group">
+                    <td className="py-4 text-gray-500">
+                      {new Date(log.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-4">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        log.triggeredBy === "ai" 
+                          ? "bg-purple-100 text-purple-700" 
+                          : log.triggeredBy === "simulation"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-700"
+                      }`}>
+                        {log.triggeredBy.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="py-4 text-gray-700">{log.message}</td>
+                    <td className="py-4">
+                      <div className="flex gap-1.5">
+                        {log.ledStatus && (
+                          <span className={`h-2 w-2 rounded-full ${log.ledStatus === "on" ? "bg-green-500" : "bg-gray-300"}`} title={`LED: ${log.ledStatus}`} />
+                        )}
+                        {log.fanStatus && (
+                          <span className={`h-2 w-2 rounded-full ${log.fanStatus === "on" ? "bg-green-500" : "bg-gray-300"}`} title={`Fan: ${log.fanStatus}`} />
+                        )}
+                        {log.pumpStatus && (
+                          <span className={`h-2 w-2 rounded-full ${log.pumpStatus === "on" ? "bg-green-500" : "bg-gray-300"}`} title={`Pump: ${log.pumpStatus}`} />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-gray-400">
+                    No automation logs found for this tray.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

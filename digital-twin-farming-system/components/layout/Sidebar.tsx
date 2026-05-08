@@ -7,9 +7,7 @@ import {
   LayoutDashboard,
   Box,
   Settings,
-  FileText,
   Leaf,
-  Activity,
   Bot
 } from "lucide-react"
 
@@ -17,8 +15,6 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Automation", href: "/automation", icon: Bot },
   { name: "Digital Twin", href: "/digital-twin", icon: Box },
-  { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Statistics", href: "/statistics", icon: Activity },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 
