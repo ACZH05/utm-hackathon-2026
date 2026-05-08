@@ -18,6 +18,7 @@ import {
   PlantProfile,
   Recommendation,
   DeviceState,
+  AutomationSettings,
 } from "@/lib/types";
 
 const DynamicFarmScene = dynamic(
@@ -49,12 +50,19 @@ const mockPlantProfile: PlantProfile = {
   safeWaterLevelRange: [70, 100],
 };
 
-// --- FIX 1: Ensure ALL zones share the exact same starting device states ---
 const defaultDeviceState: DeviceState = {
   ledStatus: "on",
   fanStatus: "on",
-  pumpStatus: "critical", // Pump is globally critical to trigger the alert
+  pumpStatus: "critical",
   reservoirStatus: "normal",
+};
+
+const defaultAutomationSettings: AutomationSettings = {
+  autoLighting: true,
+  autoClimate: true,
+  autoWatering: true,
+  targetTemperature: 22,
+  targetHumidity: 65,
 };
 
 const createMockState = (
@@ -71,6 +79,7 @@ const createMockState = (
   deviceState: { ...defaultDeviceState },
   alerts: [],
   recommendation: defaultRec,
+  automationSettings: { ...defaultAutomationSettings },
   ...overrides,
 });
 
@@ -120,7 +129,6 @@ export default function DigitalTwin() {
   const activeKey = selected ? selected.name : "overall";
   const currentData = zonesData[activeKey] || zonesData["overall"];
 
-  // Ensure state mutations are completely immutable so React updates instantly
   const toggleGlobalDevice = (device: keyof DeviceState) => {
     setZonesData((prev) => {
       const newState = { ...prev };
@@ -144,7 +152,6 @@ export default function DigitalTwin() {
       const nextLed: DeviceStatus =
         currentLed === "on" ? "off" : currentLed === "off" ? "warning" : "on";
 
-      // Toggle ALL lights if looking at a global view
       if (
         !selected ||
         ["rack", "pump", "fan", "reservoir"].includes(selected.type)
@@ -156,7 +163,6 @@ export default function DigitalTwin() {
           };
         });
       } else {
-        // Toggle specific zone lights
         const zone = activeKey.split("_")[1];
         if (zone) {
           if (newState[`led_${zone}`]) {
@@ -218,7 +224,6 @@ export default function DigitalTwin() {
             </div>
           </div>
 
-          {/* --- FIX 2: RESTORED RESET VIEW BUTTON --- */}
           <div className="absolute bottom-6 left-6 right-6 flex justify-between pointer-events-none">
             <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-medium shadow-sm flex items-center gap-3 pointer-events-auto border border-gray-100 shrink-0">
               <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shrink-0"></div>
@@ -231,7 +236,6 @@ export default function DigitalTwin() {
               Reset View
             </button>
           </div>
-          {/* ------------------------------------------ */}
         </div>
 
         {/* SIDE PANELS */}
@@ -286,7 +290,7 @@ export default function DigitalTwin() {
 
           {/* DYNAMIC DEVICE STATUS PANEL */}
           <div className="bg-gray-900 text-white rounded-3xl p-6 shadow-xl flex-1 shrink-0">
-            <h3 className="text-lg font-semibold mb-5">
+            <h3 className="text-lg font-semibold mb-5 flex items-center justify-between">
               {showAllControls ? "Global Controls" : "Device Control"}
             </h3>
             <div className="space-y-3">

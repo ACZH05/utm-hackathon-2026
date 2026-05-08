@@ -2,8 +2,6 @@ export type DeviceStatus = "normal" | "warning" | "critical" | "off" | "on";
 
 export type AlertSeverity = "info" | "warning" | "critical";
 
-export type AutomationMode = "manual" | "ai";
-
 export interface SensorReading {
   temperature: number;
   humidity: number;
@@ -44,33 +42,18 @@ export interface PlantProfile {
   safeWaterLevelRange: [number, number];
 }
 
+export interface SelectedComponent {
+  type: "plant" | "led" | "fan" | "pump" | "reservoir";
+  name: string;
+}
+
+// --- NEW: Define the exact shape of your Automation Settings ---
 export interface AutomationSettings {
-  mode: AutomationMode;
-  ledStartTime: string;
-  ledEndTime: string;
-  ledSpectrum: "blue" | "red" | "white" | "mixed";
-  fanTriggerTemperature: number;
-  pumpIntervalMinutes: number;
-  pumpDurationSeconds: number;
-}
-
-export interface AIAutomationRecommendation {
-  cropName: string;
-  ledStartTime: string;
-  ledEndTime: string;
-  ledSpectrum: "blue" | "red" | "white" | "mixed";
-  fanTriggerTemperature: number;
-  pumpIntervalMinutes: number;
-  pumpDurationSeconds: number;
-  confidence: number;
-}
-
-export interface AutomationEvent {
-  device: "led" | "fan" | "pump";
-  action: "on" | "off";
-  triggeredBy: "manual" | "ai" | "simulation";
-  message: string;
-  createdAt: string;
+  autoLighting: boolean;
+  autoClimate: boolean;
+  autoWatering: boolean;
+  targetTemperature: number;
+  targetHumidity: number;
 }
 
 export interface DigitalTwinState {
@@ -78,10 +61,6 @@ export interface DigitalTwinState {
   deviceState: DeviceState;
   alerts: Alert[];
   recommendation: Recommendation;
-  automationSettings: AutomationSettings;
-}
-
-export interface SelectedComponent {
-  type: "plant" | "led" | "fan" | "pump" | "reservoir";
-  name: string;
+  // --- UPDATED: Add the new settings as an optional property ---
+  automationSettings?: AutomationSettings;
 }
