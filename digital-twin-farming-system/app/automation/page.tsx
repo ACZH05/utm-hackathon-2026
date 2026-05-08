@@ -616,9 +616,9 @@ export default function AutomationPage() {
           </div>
 
           {isBusy ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 animate-pulse">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-32 rounded-2xl bg-gray-100" />
+                <div key={i} className="h-32 rounded-2xl skeleton" />
               ))}
             </div>
           ) : (
@@ -676,9 +676,9 @@ export default function AutomationPage() {
           </h2>
           <div className="space-y-3">
             {isBusy ? (
-              <div className="space-y-3 animate-pulse">
+              <div className="space-y-3">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-16 rounded-2xl bg-gray-100" />
+                  <div key={i} className="h-16 rounded-2xl skeleton" />
                 ))}
               </div>
             ) : (
