@@ -17,9 +17,9 @@ class Settings:
 def get_settings() -> Settings:
     load_dotenv()
 
-    gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite").strip()
 
     return Settings(
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
-        gemini_model=gemini_model or "gemini-2.5-flash",
+        gemini_model=gemini_model or "gemini-2.5-flash-lite",
     )
