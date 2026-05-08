@@ -94,6 +94,18 @@ export interface AutomationEvent {
   triggeredBy: "manual" | "ai" | "simulation";
   message: string;
   createdAt: string;
+export interface SelectedComponent {
+  type: "plant" | "led" | "fan" | "pump" | "reservoir";
+  name: string;
+}
+
+// --- NEW: Define the exact shape of your Automation Settings ---
+export interface AutomationSettings {
+  autoLighting: boolean;
+  autoClimate: boolean;
+  autoWatering: boolean;
+  targetTemperature: number;
+  targetHumidity: number;
 }
 
 export interface DigitalTwinState {
@@ -101,10 +113,6 @@ export interface DigitalTwinState {
   deviceState: DeviceState;
   alerts: Alert[];
   recommendation: Recommendation;
-  automationSettings: AutomationSettings;
-}
-
-export interface SelectedComponent {
-  type: "plant" | "led" | "fan" | "pump" | "reservoir";
-  name: string;
+  // --- UPDATED: Add the new settings as an optional property ---
+  automationSettings?: AutomationSettings;
 }

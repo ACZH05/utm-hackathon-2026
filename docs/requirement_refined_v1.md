@@ -176,8 +176,10 @@ Note: the UI can use `on` and `off` for manual device state, while `normal`, `wa
 }
 ```
 - Rules:
-  - Start with rule-based logic only.
-  - Return one clear recommendation focused on immediate control action.
+  - Use Gemini as the primary reasoning engine.
+  - Analyze the latest sensor reading and plant profile before generating one clear recommendation.
+  - The recommendation can cover immediate control action, optimal harvest timing, or nutrient-mixture adjustment.
+  - A simple rule-based fallback can be used if Gemini is unavailable during the demo.
   - Do not connect FastAPI directly to the database.
   - Next.js is responsible for calling FastAPI.
 

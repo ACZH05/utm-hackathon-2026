@@ -32,9 +32,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <Sidebar />
         <div className="pl-64 min-h-screen flex flex-col">
-          <main className="flex-1 p-8">
-            {children}
-          </main>
+          <main className="flex-1 p-8">{children}</main>
         </div>
       </body>
     </html>
