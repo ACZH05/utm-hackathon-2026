@@ -4,7 +4,22 @@ export type AlertSeverity = "info" | "warning" | "critical";
 
 export type AutomationMode = "manual" | "ai";
 
+export interface Rack {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface Tray {
+  id: string;
+  rackId: string;
+  name: string;
+  plantProfileId?: string;
+  createdAt: string;
+}
+
 export interface SensorReading {
+  trayId: string;
   temperature: number;
   humidity: number;
   soilMoisture: number;
@@ -14,6 +29,7 @@ export interface SensorReading {
 }
 
 export interface DeviceState {
+  trayId: string;
   ledStatus: DeviceStatus;
   fanStatus: DeviceStatus;
   pumpStatus: DeviceStatus;
@@ -21,6 +37,7 @@ export interface DeviceState {
 }
 
 export interface Alert {
+  trayId: string;
   type: string;
   severity: AlertSeverity;
   message: string;
@@ -28,6 +45,7 @@ export interface Alert {
 }
 
 export interface Recommendation {
+  trayId: string;
   title: string;
   message: string;
   suggestedAction: string;
@@ -36,6 +54,7 @@ export interface Recommendation {
 }
 
 export interface PlantProfile {
+  id: string;
   cropName: string;
   safeTemperatureRange: [number, number];
   safeHumidityRange: [number, number];
@@ -45,6 +64,7 @@ export interface PlantProfile {
 }
 
 export interface AutomationSettings {
+  trayId: string;
   mode: AutomationMode;
   ledStartTime: string;
   ledEndTime: string;
@@ -55,6 +75,7 @@ export interface AutomationSettings {
 }
 
 export interface AIAutomationRecommendation {
+  trayId: string;
   cropName: string;
   ledStartTime: string;
   ledEndTime: string;
@@ -66,6 +87,7 @@ export interface AIAutomationRecommendation {
 }
 
 export interface AutomationEvent {
+  trayId: string;
   device: "led" | "fan" | "pump";
   action: "on" | "off";
   triggeredBy: "manual" | "ai" | "simulation";

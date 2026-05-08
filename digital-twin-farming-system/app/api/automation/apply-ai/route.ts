@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     const savedSettings = await insertAutomationProfile(sql, automationSettings);
 
     await insertAutomationLog(sql, {
+      trayId: aiAutomationRecommendation.trayId,
       device: "led",
       action: "on",
       triggeredBy: "ai",

@@ -6,8 +6,8 @@ import {
   AreaChart, Area,
   PieChart, Pie, Cell
 } from 'recharts'
-import { Leaf, Droplet, Zap, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react'
-import type { DigitalTwinState, SensorReading } from '@/lib/types'
+import { Leaf, Droplet, Zap, AlertTriangle, CheckCircle2, TrendingUp, Sparkles, LayoutGrid, Layers } from 'lucide-react'
+import type { DigitalTwinState, SensorReading, Rack, Tray } from '@/lib/types'
 
 // Mock Data for fields not in DB yet
 const weeklyConsumption = [
@@ -30,16 +30,54 @@ const cropDistribution = [
 const COLORS = ['#3D5654', '#C49646', '#4CAF50', '#81C784']
 
 export default function Dashboard() {
+  const [racks, setRacks] = useState<Rack[]>([]);
+  const [trays, setTrays] = useState<Tray[]>([]);
+  const [selectedRackId, setSelectedRackId] = useState<string>("");
+  const [selectedTrayId, setSelectedTrayId] = useState<string>("");
+
   const [dashboardState, setDashboardState] = useState<DigitalTwinState | null>(null);
   const [history, setHistory] = useState<SensorReading[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Initial load of racks
+  useEffect(() => {
+    async function loadRacks() {
+      const response = await fetch("/api/racks");
+      const data = (await response.json()) as Rack[];
+      setRacks(data);
+      if (data.length > 0) {
+        setSelectedRackId(data[0].id);
+      }
+    }
+    loadRacks().catch(console.error);
+  }, []);
+
+  // Load trays when rack changes
+  useEffect(() => {
+    if (!selectedRackId) return;
+
+    async function loadTrays() {
+      const response = await fetch(`/api/trays?rackId=${selectedRackId}`);
+      const data = (await response.json()) as Tray[];
+      setTrays(data);
+      if (data.length > 0) {
+        setSelectedTrayId(data[0].id);
+      } else {
+        setSelectedTrayId("");
+      }
+    }
+    loadTrays().catch(console.error);
+  }, [selectedRackId]);
+
   useEffect(() => {
     async function fetchData() {
+      if (!selectedTrayId) return;
+      
+      setIsLoading(true);
       try {
         const [dbResponse, historyResponse] = await Promise.all([
-          fetch('/api/dashboard'),
-          fetch('/api/sensors/history')
+          fetch(`/api/dashboard?trayId=${selectedTrayId}`),
+          fetch(`/api/sensors/history?trayId=${selectedTrayId}`)
         ]);
         
         const dbData = await dbResponse.json();
@@ -55,7 +93,7 @@ export default function Dashboard() {
     }
 
     fetchData();
-  }, []);
+  }, [selectedTrayId]);
 
   const sensorReading = dashboardState?.sensorReading;
   const alerts = dashboardState?.alerts || [];
@@ -68,7 +106,7 @@ export default function Dashboard() {
     humidity: h.humidity
   }));
 
-  if (isLoading) {
+  if (isLoading && !dashboardState) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="text-xl font-semibold text-gray-500 animate-pulse">Loading dashboard data...</div>
@@ -88,6 +126,46 @@ export default function Dashboard() {
               <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" />
            </svg>
         </div>
+      </div>
+
+      {/* Rack and Tray Selectors */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <label className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            Select Rack
+          </div>
+          <select
+            value={selectedRackId}
+            onChange={(e) => setSelectedRackId(e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary shadow-sm"
+          >
+            {racks.map((rack) => (
+              <option key={rack.id} value={rack.id}>
+                {rack.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <Layers className="h-4 w-4 text-primary" />
+            Select Tray
+          </div>
+          <select
+            value={selectedTrayId}
+            onChange={(e) => setSelectedTrayId(e.target.value)}
+            disabled={trays.length === 0}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50 shadow-sm"
+          >
+            {trays.map((tray) => (
+              <option key={tray.id} value={tray.id}>
+                {tray.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* Top Cards */}
@@ -256,5 +334,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
-import { Sparkles } from 'lucide-react'

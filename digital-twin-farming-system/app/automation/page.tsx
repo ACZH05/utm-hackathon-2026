@@ -6,6 +6,8 @@ import {
   Clock3,
   Droplets,
   Fan,
+  Layers,
+  LayoutGrid,
   Lightbulb,
   Play,
   Save,
@@ -20,9 +22,12 @@ import type {
   AutomationSettings,
   DeviceState,
   DigitalTwinState,
+  Rack,
+  Tray,
 } from "@/lib/types";
 
 const defaultAutomationSettings: AutomationSettings = {
+  trayId: "",
   mode: "manual",
   ledStartTime: "06:00",
   ledEndTime: "20:00",
@@ -72,6 +77,11 @@ function formatSpectrum(spectrum: AutomationSettings["ledSpectrum"]) {
 }
 
 export default function AutomationPage() {
+  const [racks, setRacks] = useState<Rack[]>([]);
+  const [trays, setTrays] = useState<Tray[]>([]);
+  const [selectedRackId, setSelectedRackId] = useState<string>("");
+  const [selectedTrayId, setSelectedTrayId] = useState<string>("");
+
   const [dashboardState, setDashboardState] = useState<DigitalTwinState | null>(null);
   const [formState, setFormState] = useState<AutomationSettings>(
     defaultAutomationSettings,
@@ -84,24 +94,72 @@ export default function AutomationPage() {
     null,
   );
   const [mockCurrentTime, setMockCurrentTime] = useState("12:00");
-  const [statusMessage, setStatusMessage] = useState("Automation profile ready.");
+  const [statusMessage, setStatusMessage] = useState("Loading racks...");
   const [isBusy, setIsBusy] = useState(false);
 
+  // Initial load of racks
   useEffect(() => {
-    async function loadDashboardState() {
-      const response = await fetch("/api/dashboard");
-      const state = (await response.json()) as DigitalTwinState;
-      setDashboardState(state);
-      setFormState(state.automationSettings);
-      setSimulatedDeviceState(state.deviceState);
+    async function loadRacks() {
+      const response = await fetch("/api/racks");
+      const data = (await response.json()) as Rack[];
+      setRacks(data);
+      if (data.length > 0) {
+        setSelectedRackId(data[0].id);
+      } else {
+        setStatusMessage("No racks found.");
+      }
+    }
+    loadRacks().catch(() => setStatusMessage("Failed to load racks."));
+  }, []);
+
+  // Load trays when rack changes
+  useEffect(() => {
+    if (!selectedRackId) return;
+
+    async function loadTrays() {
+      const response = await fetch(`/api/trays?rackId=${selectedRackId}`);
+      const data = (await response.json()) as Tray[];
+      setTrays(data);
+      if (data.length > 0) {
+        setSelectedTrayId(data[0].id);
+      } else {
+        setSelectedTrayId("");
+        setStatusMessage("No trays found in this rack.");
+      }
+    }
+    loadTrays().catch(() => setStatusMessage("Failed to load trays."));
+  }, [selectedRackId]);
+
+  // Load dashboard when tray changes
+  useEffect(() => {
+    async function loadDashboardState(trayId: string) {
+      if (!trayId) return;
+      setIsBusy(true);
+      setStatusMessage("Loading tray state...");
+      try {
+        const response = await fetch(`/api/dashboard?trayId=${trayId}`);
+        const state = (await response.json()) as DigitalTwinState;
+        if ("error" in state) throw new Error(String(state.error));
+
+        setDashboardState(state);
+        setFormState(state.automationSettings);
+        setSimulatedDeviceState(state.deviceState);
+        setAiRecommendation(null);
+        setAutomationEvent(null);
+        setStatusMessage(`Tray ${trayId} loaded.`);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Unable to load automation state.";
+        setStatusMessage(message);
+      } finally {
+        setIsBusy(false);
+      }
     }
 
-    loadDashboardState().catch((error: unknown) => {
-      const message =
-        error instanceof Error ? error.message : "Unable to load automation state.";
-      setStatusMessage(message);
-    });
-  }, []);
+    if (selectedTrayId) {
+      void loadDashboardState(selectedTrayId);
+    }
+  }, [selectedTrayId]);
 
   const sensorReading = dashboardState?.sensorReading;
   const activeDeviceState = simulatedDeviceState ?? dashboardState?.deviceState;
@@ -133,6 +191,7 @@ export default function AutomationPage() {
   );
 
   async function handleSaveManualSettings() {
+    if (!selectedTrayId) return;
     setIsBusy(true);
     setStatusMessage("Saving manual automation profile...");
 
@@ -141,6 +200,7 @@ export default function AutomationPage() {
         "/api/automation/manual",
         {
           ...formState,
+          trayId: selectedTrayId,
           mode: "manual",
         },
       );
@@ -161,6 +221,7 @@ export default function AutomationPage() {
   }
 
   async function handleGenerateAiSettings() {
+    if (!selectedTrayId || !sensorReading) return;
     setIsBusy(true);
     setStatusMessage("Generating rule-based AI-assisted settings...");
 
@@ -168,6 +229,7 @@ export default function AutomationPage() {
       const payload = await postJson<{
         aiAutomationRecommendation: AIAutomationRecommendation;
       }>("/api/automation/ai-generate", {
+        trayId: selectedTrayId,
         sensorReading,
       });
       setAiRecommendation(payload.aiAutomationRecommendation);
@@ -182,7 +244,7 @@ export default function AutomationPage() {
   }
 
   async function handleApplyAiSettings() {
-    if (!aiRecommendation) {
+    if (!aiRecommendation || !selectedTrayId) {
       setStatusMessage("Generate AI-assisted settings before applying them.");
       return;
     }
@@ -194,7 +256,10 @@ export default function AutomationPage() {
       const payload = await postJson<{ automationSettings: AutomationSettings }>(
         "/api/automation/apply-ai",
         {
-          aiAutomationRecommendation: aiRecommendation,
+          aiAutomationRecommendation: {
+            ...aiRecommendation,
+            trayId: selectedTrayId,
+          },
         },
       );
       setFormState(payload.automationSettings);
@@ -214,6 +279,7 @@ export default function AutomationPage() {
   }
 
   async function handleRunSimulation() {
+    if (!selectedTrayId) return;
     setIsBusy(true);
     setStatusMessage("Running automation simulation...");
 
@@ -222,6 +288,7 @@ export default function AutomationPage() {
         deviceState: DeviceState;
         automationEvent?: AutomationEvent;
       }>("/api/automation/simulate", {
+        trayId: selectedTrayId,
         sensorReading,
         automationSettings: formState,
         mockCurrentTime,
@@ -244,12 +311,51 @@ export default function AutomationPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Automation Control</h1>
           <p className="text-gray-500">
-            LED, fan, and pump scheduling for the demo rack
+            Set schedules and rules for specific racks and trays
           </p>
         </div>
         <div className="rounded-full border border-primary/20 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm">
           {statusMessage}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            Select Rack
+          </div>
+          <select
+            value={selectedRackId}
+            onChange={(e) => setSelectedRackId(e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+          >
+            {racks.map((rack) => (
+              <option key={rack.id} value={rack.id}>
+                {rack.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <Layers className="h-4 w-4 text-primary" />
+            Select Tray
+          </div>
+          <select
+            value={selectedTrayId}
+            onChange={(e) => setSelectedTrayId(e.target.value)}
+            disabled={trays.length === 0}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50"
+          >
+            {trays.map((tray) => (
+              <option key={tray.id} value={tray.id}>
+                {tray.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -490,42 +596,50 @@ export default function AutomationPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <Lightbulb className="h-5 w-5 text-primary" />
-                {activeDeviceState && statusBadge(activeDeviceState.ledStatus)}
+          {isBusy ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-32 rounded-2xl bg-gray-100" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  {activeDeviceState && statusBadge(activeDeviceState.ledStatus)}
+                </div>
+                <div className="font-semibold text-gray-800">LED Lights</div>
+                <div className="text-sm text-gray-500">
+                  {formState.ledStartTime} - {formState.ledEndTime}
+                </div>
               </div>
-              <div className="font-semibold text-gray-800">LED Lights</div>
-              <div className="text-sm text-gray-500">
-                {formState.ledStartTime} - {formState.ledEndTime}
+
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <Fan className="h-5 w-5 text-primary" />
+                  {activeDeviceState && statusBadge(activeDeviceState.fanStatus)}
+                </div>
+                <div className="font-semibold text-gray-800">Cooling Fan</div>
+                <div className="text-sm text-gray-500">
+                  Trigger at {formState.fanTriggerTemperature}°C
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <Droplets className="h-5 w-5 text-primary" />
+                  {activeDeviceState && statusBadge(activeDeviceState.pumpStatus)}
+                </div>
+                <div className="font-semibold text-gray-800">Water Pump</div>
+                <div className="text-sm text-gray-500">
+                  {formState.pumpIntervalMinutes}m cycle
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <Fan className="h-5 w-5 text-primary" />
-                {activeDeviceState && statusBadge(activeDeviceState.fanStatus)}
-              </div>
-              <div className="font-semibold text-gray-800">Cooling Fan</div>
-              <div className="text-sm text-gray-500">
-                Trigger at {formState.fanTriggerTemperature}°C
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <Droplets className="h-5 w-5 text-primary" />
-                {activeDeviceState && statusBadge(activeDeviceState.pumpStatus)}
-              </div>
-              <div className="font-semibold text-gray-800">Water Pump</div>
-              <div className="text-sm text-gray-500">
-                {formState.pumpIntervalMinutes}m cycle
-              </div>
-            </div>
-          </div>
-
-          {automationEvent && (
+          {automationEvent && !isBusy && (
             <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-sm text-gray-700">
               <span className="font-semibold">{automationEvent.device.toUpperCase()}</span>{" "}
               {automationEvent.message}
@@ -538,41 +652,53 @@ export default function AutomationPage() {
             Active Profile
           </h2>
           <div className="space-y-3">
-            {automationSummary.map((item) => {
-              const Icon = item.icon;
+            {isBusy ? (
+              <div className="space-y-3 animate-pulse">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-16 rounded-2xl bg-gray-100" />
+                ))}
+              </div>
+            ) : (
+              automationSummary.map((item) => {
+                const Icon = item.icon;
 
-              return (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-primary/10 p-2 text-primary">
-                      <Icon className="h-4 w-4" />
+                return (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">
+                        {item.label}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-600">
-                      {item.label}
+                    <span className="text-sm font-bold text-gray-800">
+                      {item.value}
                     </span>
                   </div>
-                  <span className="text-sm font-bold text-gray-800">
-                    {item.value}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
-          <div className="mt-5 rounded-2xl bg-sidebar p-4 text-sidebar-foreground">
+          <div className={`mt-5 rounded-2xl bg-sidebar p-4 text-sidebar-foreground ${isBusy ? "animate-pulse" : ""}`}>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <Thermometer className="h-4 w-4 text-primary" />
               Latest Sensor
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm opacity-90">
-              <span>Temp {sensorReading?.temperature ?? "--"}°C</span>
-              <span>Humidity {sensorReading?.humidity ?? "--"}%</span>
-              <span>Moisture {sensorReading?.soilMoisture ?? "--"}%</span>
-              <span>pH {sensorReading?.waterPh ?? "--"}</span>
-            </div>
+            {isBusy ? (
+              <div className="h-10 bg-white/10 rounded-lg w-full" />
+            ) : (
+              <div className="grid grid-cols-2 gap-2 text-sm opacity-90">
+                <span>Temp {sensorReading?.temperature ?? "--"}°C</span>
+                <span>Humidity {sensorReading?.humidity ?? "--"}%</span>
+                <span>Moisture {sensorReading?.soilMoisture ?? "--"}%</span>
+                <span>pH {sensorReading?.waterPh ?? "--"}</span>
+              </div>
+            )}
           </div>
         </section>
       </div>
