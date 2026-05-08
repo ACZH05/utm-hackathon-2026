@@ -1,3 +1,4 @@
+// components/models/FarmScene.tsx
 "use client";
 
 import React, { useEffect } from "react";
@@ -11,6 +12,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { ProceduralFarm } from "./ProceduralFarm";
+import { DigitalTwinState, SelectedComponent } from "@/lib/types"; // IMPORT TYPE
 
 function WebGLCleanup() {
   const { gl } = useThree();
@@ -19,22 +21,6 @@ function WebGLCleanup() {
       setTimeout(() => {
         gl.dispose();
       }, 0);
-    };
-  }, [gl]);
-  return null;
-}
-
-function WebGLCrashGuard() {
-  const { gl } = useThree();
-  useEffect(() => {
-    const canvas = gl.domElement;
-    const handleContextLoss = (event: Event) => {
-      event.preventDefault();
-      console.error("🚨 WebGL Context Lost!");
-    };
-    canvas.addEventListener("webglcontextlost", handleContextLoss, false);
-    return () => {
-      canvas.removeEventListener("webglcontextlost", handleContextLoss);
     };
   }, [gl]);
   return null;
@@ -66,17 +52,13 @@ function SelectToZoom({
   );
 }
 
-// 👇 UPDATE THE PROPS HERE 👇
 export default function FarmScene({
   onSelectPart,
   zonesData,
-  fanStatus,
-  pumpStatus,
 }: {
-  onSelectPart: (part: string) => void;
-  zonesData: Record<string, any>;
-  fanStatus: string;
-  pumpStatus: string;
+  // STRICT TYPE CHECKING HERE
+  onSelectPart: (part: SelectedComponent | null) => void;
+  zonesData: Record<string, DigitalTwinState>;
 }) {
   return (
     <Canvas
@@ -88,8 +70,6 @@ export default function FarmScene({
       }}
     >
       <WebGLCleanup />
-      <WebGLCrashGuard />
-
       <ambientLight intensity={0.5} />
       <directionalLight
         position={[10, 10, 5]}
@@ -99,13 +79,8 @@ export default function FarmScene({
       />
 
       <Bounds fit clip observe margin={1.2}>
-        <SelectToZoom onReset={() => onSelectPart("overall")}>
-          <ProceduralFarm
-            onSelectPart={onSelectPart}
-            zonesData={zonesData}
-            fanStatus={fanStatus}
-            pumpStatus={pumpStatus}
-          />
+        <SelectToZoom onReset={() => onSelectPart(null)}>
+          <ProceduralFarm onSelectPart={onSelectPart} zonesData={zonesData} />
         </SelectToZoom>
       </Bounds>
 

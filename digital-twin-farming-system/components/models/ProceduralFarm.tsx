@@ -4,6 +4,7 @@ import React, { useMemo, useState, useRef } from "react";
 import { Box, Cylinder, Sphere } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { DigitalTwinState, SelectedComponent } from "@/lib/types"; // IMPORT TYPE
 
 const PlantSprout = ({ position, rotation, scale }: any) => (
   <group position={position} rotation={rotation} scale={scale}>
@@ -32,24 +33,23 @@ const PlantSprout = ({ position, rotation, scale }: any) => (
 export function ProceduralFarm({
   onSelectPart,
   zonesData,
-  fanStatus = "",
-  pumpStatus = "",
 }: {
-  onSelectPart: (part: string) => void;
-  zonesData: Record<string, any>;
-  fanStatus?: string;
-  pumpStatus?: string;
+  onSelectPart: (part: SelectedComponent | null) => void;
+  zonesData: Record<string, DigitalTwinState>;
 }) {
   const [hoveredPart, setHoveredPart] = useState<string | null>(null);
   const fanBladesRef = useRef<THREE.Group>(null);
 
-  const isFanOn = fanStatus.includes("ON") || fanStatus.includes("AUTO");
-  const isPumpError = pumpStatus.includes("ERROR");
+  const globalFanState = zonesData["overall"]?.deviceState.fanStatus || "off";
+  const globalPumpState =
+    zonesData["overall"]?.deviceState.pumpStatus || "normal";
 
   useFrame(() => {
-    if (isFanOn && fanBladesRef.current) {
-      const speed = fanStatus.includes("High") ? 0.4 : 0.15;
-      fanBladesRef.current.rotation.z += speed;
+    if (
+      (globalFanState === "on" || globalFanState === "normal") &&
+      fanBladesRef.current
+    ) {
+      fanBladesRef.current.rotation.z += 0.3;
     }
   });
 
@@ -73,30 +73,17 @@ export function ProceduralFarm({
   }, []);
 
   const renderTier = (tierNumber: number, yPosition: number, zone: string) => {
-    const isHoveredRack = hoveredPart === `rack`;
-    const isHoveredPlants = hoveredPart === `plants_${zone}`;
-    const isHoveredLED = hoveredPart === `led_${zone}`;
-
-    // 👇 THIS IS THE MAGIC: Look up the exact LED state for THIS SPECIFIC ZONE 👇
-    const zoneLedStatus = zonesData[`led_${zone}`]?.led || "OFF";
-    const isLedOn = zoneLedStatus.includes("ON");
+    const zoneLedStatus =
+      zonesData[`led_${zone}`]?.deviceState.ledStatus || "off";
+    const isLedOn = zoneLedStatus === "on" || zoneLedStatus === "normal";
+    const isLedWarning = zoneLedStatus === "warning";
 
     return (
       <group position={[0, yPosition, 0]} key={`tier-${tierNumber}`}>
         <group
           onClick={(e) => {
             e.stopPropagation();
-            onSelectPart("rack");
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveredPart(`rack`);
-            document.body.style.cursor = "pointer";
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            setHoveredPart(null);
-            document.body.style.cursor = "auto";
+            onSelectPart(null);
           }}
         >
           <Box
@@ -109,28 +96,16 @@ export function ProceduralFarm({
               color="#4a5568"
               metalness={0.7}
               roughness={0.3}
-              emissive="#ffffff"
-              emissiveIntensity={isHoveredRack ? 0.2 : 0}
             />
           </Box>
         </group>
 
-        {/* LED LIGHTS */}
+        {/* LED LIGHTS -> Returns { type: "led", name: "led_A" } */}
         <group
           position={[0, 1.1, 0]}
           onClick={(e) => {
             e.stopPropagation();
-            onSelectPart(`led_${zone}`);
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveredPart(`led_${zone}`);
-            document.body.style.cursor = "pointer";
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            setHoveredPart(null);
-            document.body.style.cursor = "auto";
+            onSelectPart({ type: "led", name: `led_${zone}` });
           }}
         >
           <Box args={[2.9, 0.05, 0.3]} castShadow>
@@ -138,39 +113,29 @@ export function ProceduralFarm({
           </Box>
           <Box args={[2.8, 0.06, 0.2]}>
             <meshStandardMaterial
-              color="#fffff0"
-              emissive="#fffff0"
-              emissiveIntensity={isLedOn ? (isHoveredLED ? 2 : 1.5) : 0}
+              color={isLedWarning ? "#fef08a" : "#fffff0"}
+              emissive={isLedWarning ? "#eab308" : "#fffff0"}
+              emissiveIntensity={isLedOn ? 1.5 : isLedWarning ? 0.8 : 0}
               toneMapped={false}
             />
           </Box>
-          {isLedOn && (
+          {(isLedOn || isLedWarning) && (
             <rectAreaLight
               width={2.8}
               height={0.2}
-              color="#fffff0"
-              intensity={3}
+              color={isLedWarning ? "#eab308" : "#fffff0"}
+              intensity={isLedWarning ? 1 : 3}
               position={[0, -0.05, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
             />
           )}
         </group>
 
-        {/* PLANT TRAYS */}
+        {/* PLANT TRAYS -> Returns { type: "plant", name: "plants_A" } */}
         <group
           onClick={(e) => {
             e.stopPropagation();
-            onSelectPart(`plants_${zone}`);
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHoveredPart(`plants_${zone}`);
-            document.body.style.cursor = "pointer";
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            setHoveredPart(null);
-            document.body.style.cursor = "auto";
+            onSelectPart({ type: "plant", name: `plants_${zone}` });
           }}
         >
           <Box
@@ -179,12 +144,7 @@ export function ProceduralFarm({
             castShadow
             receiveShadow
           >
-            <meshStandardMaterial
-              color="#1a202c"
-              roughness={0.9}
-              emissive="#ffffff"
-              emissiveIntensity={isHoveredPlants ? 0.1 : 0}
-            />
+            <meshStandardMaterial color="#1a202c" roughness={0.9} />
           </Box>
           <Box args={[2.8, 0.16, 1.1]} position={[0, 0.08, 0]} receiveShadow>
             <meshStandardMaterial color="#3e2723" roughness={1} />
@@ -239,17 +199,7 @@ export function ProceduralFarm({
         position={[0, 0.3, 0]}
         onClick={(e) => {
           e.stopPropagation();
-          onSelectPart("reservoir");
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHoveredPart("reservoir");
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation();
-          setHoveredPart(null);
-          document.body.style.cursor = "auto";
+          onSelectPart({ type: "reservoir", name: "reservoir" });
         }}
       >
         <Box args={[2.8, 0.6, 1.2]} receiveShadow castShadow>
@@ -258,8 +208,6 @@ export function ProceduralFarm({
             roughness={0.2}
             transparent
             opacity={0.8}
-            emissive="#ffffff"
-            emissiveIntensity={hoveredPart === "reservoir" ? 0.2 : 0}
           />
         </Box>
         <Box args={[2.7, 0.4, 1.1]} position={[0, -0.05, 0]}>
@@ -272,17 +220,7 @@ export function ProceduralFarm({
         position={[1.6, 0.3, 0]}
         onClick={(e) => {
           e.stopPropagation();
-          onSelectPart("pump");
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHoveredPart("pump");
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation();
-          setHoveredPart(null);
-          document.body.style.cursor = "auto";
+          onSelectPart({ type: "pump", name: "pump" });
         }}
       >
         <Cylinder
@@ -290,18 +228,25 @@ export function ProceduralFarm({
           rotation={[0, 0, Math.PI / 2]}
           castShadow
         >
-          <meshStandardMaterial
-            color="#2d3748"
-            metalness={0.8}
-            emissive="#ffffff"
-            emissiveIntensity={hoveredPart === "pump" ? 0.2 : 0}
-          />
+          <meshStandardMaterial color="#2d3748" metalness={0.8} />
         </Cylinder>
         <Sphere args={[0.05]} position={[0.25, 0.15, 0]}>
           <meshStandardMaterial
-            color={isPumpError ? "#e53e3e" : "#48bb78"}
-            emissive={isPumpError ? "#e53e3e" : "#48bb78"}
-            emissiveIntensity={1}
+            color={
+              globalPumpState === "critical"
+                ? "#e53e3e"
+                : globalPumpState === "warning"
+                  ? "#eab308"
+                  : "#48bb78"
+            }
+            emissive={
+              globalPumpState === "critical"
+                ? "#e53e3e"
+                : globalPumpState === "warning"
+                  ? "#eab308"
+                  : "#48bb78"
+            }
+            emissiveIntensity={globalPumpState === "off" ? 0 : 1}
           />
         </Sphere>
       </group>
@@ -311,26 +256,11 @@ export function ProceduralFarm({
         position={[-1.7, 3.8, 0]}
         onClick={(e) => {
           e.stopPropagation();
-          onSelectPart("fan");
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHoveredPart("fan");
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation();
-          setHoveredPart(null);
-          document.body.style.cursor = "auto";
+          onSelectPart({ type: "fan", name: "fan" });
         }}
       >
         <Box args={[0.2, 0.6, 0.6]} castShadow>
-          <meshStandardMaterial
-            color="#a0aec0"
-            metalness={0.5}
-            emissive="#ffffff"
-            emissiveIntensity={hoveredPart === "fan" ? 0.2 : 0}
-          />
+          <meshStandardMaterial color="#a0aec0" metalness={0.5} />
         </Box>
         <group
           ref={fanBladesRef}

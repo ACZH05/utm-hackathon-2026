@@ -2,7 +2,23 @@
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
-import { Activity, Thermometer, Droplets, Wind, Lightbulb } from "lucide-react";
+import {
+  Activity,
+  Thermometer,
+  Droplets,
+  Wind,
+  Lightbulb,
+  AlertTriangle,
+  Leaf,
+} from "lucide-react";
+import {
+  DigitalTwinState,
+  DeviceStatus,
+  SelectedComponent,
+  PlantProfile,
+  Recommendation,
+  DeviceState,
+} from "@/lib/types";
 
 const DynamicFarmScene = dynamic(
   () => import("@/components/models/FarmScene"),
@@ -11,194 +27,198 @@ const DynamicFarmScene = dynamic(
     loading: () => (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-t-2 border-green-500"></div>
-        <p className="text-gray-500 font-medium animate-pulse">
-          Initializing WebGL Engine...
-        </p>
       </div>
     ),
   },
 );
 
-// --- INITIAL DATA DICTIONARY ---
-const initialFarmData: Record<
-  string,
-  {
-    title: string;
-    temp: string;
-    humidity: string;
-    moisture: string;
-    led: string;
-  }
-> = {
-  overall: {
-    title: "Overall Farm Status",
-    temp: "24°C",
-    humidity: "60%",
-    moisture: "45%",
-    led: "ON (Full Spectrum)",
+const defaultRec: Recommendation = {
+  title: "System OK",
+  message: "All parameters nominal.",
+  suggestedAction: "Continue standard operation",
+  severity: "info",
+  confidence: 0.95,
+};
+
+const mockPlantProfile: PlantProfile = {
+  cropName: "Butterhead Lettuce",
+  safeTemperatureRange: [18, 24],
+  safeHumidityRange: [50, 70],
+  safeSoilMoistureRange: [60, 80],
+  safeWaterPhRange: [5.5, 6.5],
+  safeWaterLevelRange: [70, 100],
+};
+
+// --- FIX 1: Ensure ALL zones share the exact same starting device states ---
+const defaultDeviceState: DeviceState = {
+  ledStatus: "on",
+  fanStatus: "on",
+  pumpStatus: "critical", // Pump is globally critical to trigger the alert
+  reservoirStatus: "normal",
+};
+
+const createMockState = (
+  overrides?: Partial<DigitalTwinState>,
+): DigitalTwinState => ({
+  sensorReading: {
+    temperature: 24,
+    humidity: 60,
+    soilMoisture: 75,
+    waterPh: 6.0,
+    waterLevel: 85,
+    createdAt: new Date().toISOString(),
   },
-  rack: {
-    title: "Main Frame",
-    temp: "22°C",
-    humidity: "65%",
-    moisture: "N/A",
-    led: "STANDBY",
-  },
-  pump: {
-    title: "Main Water Pump",
-    temp: "23°C",
-    humidity: "62%",
-    moisture: "100%",
-    led: "STANDBY",
-  },
-  fan: {
-    title: "HVAC Circulation Fan",
-    temp: "21°C",
-    humidity: "58%",
-    moisture: "N/A",
-    led: "STANDBY",
-  },
-  reservoir: {
-    title: "Nutrient Reservoir",
-    temp: "20°C",
-    humidity: "65%",
-    moisture: "100%",
-    led: "STANDBY",
-  },
-  plants_A: {
-    title: "Plant Trays (Zone A)",
-    temp: "26°C",
-    humidity: "55%",
-    moisture: "82%",
-    led: "ON (High)",
-  },
-  led_A: {
-    title: "LED Array (Zone A)",
-    temp: "28°C",
-    humidity: "50%",
-    moisture: "N/A",
-    led: "ON (High)",
-  },
-  plants_B: {
-    title: "Plant Trays (Zone B)",
-    temp: "25°C",
-    humidity: "56%",
-    moisture: "78%",
-    led: "ON (Med)",
-  },
-  led_B: {
-    title: "LED Array (Zone B)",
-    temp: "27°C",
-    humidity: "52%",
-    moisture: "N/A",
-    led: "ON (Med)",
-  },
-  plants_C: {
-    title: "Plant Trays (Zone C)",
-    temp: "24°C",
-    humidity: "58%",
-    moisture: "85%",
-    led: "ON (Low)",
-  },
-  led_C: {
-    title: "LED Array (Zone C)",
-    temp: "27°C",
-    humidity: "51%",
-    moisture: "N/A",
-    led: "ON (Low)",
-  },
+  deviceState: { ...defaultDeviceState },
+  alerts: [],
+  recommendation: defaultRec,
+  ...overrides,
+});
+
+const initialFarmData: Record<string, DigitalTwinState> = {
+  overall: createMockState({
+    alerts: [
+      {
+        type: "HARDWARE",
+        severity: "critical",
+        message: "Pump pressure drop detected",
+        createdAt: new Date().toISOString(),
+      },
+    ],
+    recommendation: {
+      title: "Maintenance Required",
+      message: "Main pump is showing critical flow resistance.",
+      suggestedAction: "Inspect check valve",
+      severity: "critical",
+      confidence: 0.92,
+    },
+  }),
+  rack: createMockState(),
+  pump: createMockState(),
+  fan: createMockState(),
+  reservoir: createMockState(),
+  plants_A: createMockState(),
+  led_A: createMockState(),
+  plants_B: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "warning" },
+  }),
+  led_B: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "warning" },
+  }),
+  plants_C: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "off" },
+  }),
+  led_C: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "off" },
+  }),
 };
 
 export default function DigitalTwin() {
-  const [selectedPart, setSelectedPart] = useState("overall");
-  const [zonesData, setZonesData] = useState(initialFarmData);
-  const [globalFan, setGlobalFan] = useState("AUTO");
-  const [globalPump, setGlobalPump] = useState("OK");
+  const [selected, setSelected] = useState<SelectedComponent | null>(null);
+  const [zonesData, setZonesData] =
+    useState<Record<string, DigitalTwinState>>(initialFarmData);
 
-  const currentData = zonesData[selectedPart] || zonesData["overall"];
+  const activeKey = selected ? selected.name : "overall";
+  const currentData = zonesData[activeKey] || zonesData["overall"];
 
-  const toggleFan = () =>
-    setGlobalFan((prev) =>
-      prev === "AUTO" ? "ON (High)" : prev === "ON (High)" ? "OFF" : "AUTO",
-    );
-  const togglePump = () =>
-    setGlobalPump((prev) =>
-      prev === "OK" ? "OFF" : prev === "OFF" ? "ERROR" : "OK",
-    );
-
-  // --- SMARTER LED TOGGLE LOGIC ---
-  const toggleLed = () => {
+  // Ensure state mutations are completely immutable so React updates instantly
+  const toggleGlobalDevice = (device: keyof DeviceState) => {
     setZonesData((prev) => {
-      const currentLed = prev[selectedPart]?.led || "OFF";
-      let nextLed = "OFF";
-      if (currentLed.includes("ON")) nextLed = "STANDBY";
-      else if (currentLed === "STANDBY") nextLed = "OFF";
-      else nextLed = "ON (Full Spectrum)";
+      const newState = { ...prev };
+      const currentStatus = newState["overall"].deviceState[device];
+      const nextStatus: DeviceStatus = currentStatus === "on" ? "off" : "on";
 
-      // If viewing Overall/Rack, change ALL zones at once
-      if (selectedPart === "overall" || selectedPart === "rack") {
-        return {
-          ...prev,
-          overall: { ...prev.overall, led: nextLed },
-          led_A: { ...prev.led_A, led: nextLed },
-          plants_A: { ...prev.plants_A, led: nextLed },
-          led_B: { ...prev.led_B, led: nextLed },
-          plants_B: { ...prev.plants_B, led: nextLed },
-          led_C: { ...prev.led_C, led: nextLed },
-          plants_C: { ...prev.plants_C, led: nextLed },
+      Object.keys(newState).forEach((key) => {
+        newState[key] = {
+          ...newState[key],
+          deviceState: { ...newState[key].deviceState, [device]: nextStatus },
         };
-      }
-
-      // If viewing a specific Zone, ONLY change that zone (syncing both plant and led panels)
-      const zone = selectedPart.split("_")[1]; // Extracts "A", "B", or "C"
-      if (zone) {
-        return {
-          ...prev,
-          [`led_${zone}`]: { ...prev[`led_${zone}`], led: nextLed },
-          [`plants_${zone}`]: { ...prev[`plants_${zone}`], led: nextLed },
-        };
-      }
-
-      return {
-        ...prev,
-        [selectedPart]: { ...prev[selectedPart], led: nextLed },
-      };
+      });
+      return newState;
     });
   };
 
+  const toggleLed = () => {
+    setZonesData((prev) => {
+      const newState = { ...prev };
+      const currentLed = newState[activeKey]?.deviceState.ledStatus || "off";
+      const nextLed: DeviceStatus =
+        currentLed === "on" ? "off" : currentLed === "off" ? "warning" : "on";
+
+      // Toggle ALL lights if looking at a global view
+      if (
+        !selected ||
+        ["rack", "pump", "fan", "reservoir"].includes(selected.type)
+      ) {
+        Object.keys(newState).forEach((key) => {
+          newState[key] = {
+            ...newState[key],
+            deviceState: { ...newState[key].deviceState, ledStatus: nextLed },
+          };
+        });
+      } else {
+        // Toggle specific zone lights
+        const zone = activeKey.split("_")[1];
+        if (zone) {
+          if (newState[`led_${zone}`]) {
+            newState[`led_${zone}`] = {
+              ...newState[`led_${zone}`],
+              deviceState: {
+                ...newState[`led_${zone}`].deviceState,
+                ledStatus: nextLed,
+              },
+            };
+          }
+          if (newState[`plants_${zone}`]) {
+            newState[`plants_${zone}`] = {
+              ...newState[`plants_${zone}`],
+              deviceState: {
+                ...newState[`plants_${zone}`].deviceState,
+                ledStatus: nextLed,
+              },
+            };
+          }
+        }
+      }
+      return newState;
+    });
+  };
+
+  const showAllControls = !selected || selected.name === "rack";
+  const showLed =
+    showAllControls || selected?.type === "led" || selected?.type === "plant";
+  const showFan = showAllControls || selected?.type === "fan";
+  const showPump =
+    showAllControls ||
+    selected?.type === "pump" ||
+    selected?.type === "reservoir";
+
   return (
     <div className="max-w-7xl mx-auto h-[calc(100vh-4rem)] flex flex-col p-4 md:p-6 lg:p-8">
-      {/* HEADER */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="min-w-0 pr-4">
           <h1 className="text-3xl font-bold text-gray-900 truncate">
             Digital Twin
           </h1>
           <p className="text-gray-500 text-sm mt-1 truncate">
-            Real-time 3D telemetry of vertical farm
+            Strict Typed Telemetry
           </p>
-        </div>
-        <div className="flex items-center gap-4 bg-green-50 p-3 rounded-2xl border border-green-100 shrink-0">
-          <Activity className="w-8 h-8 text-green-600" />
         </div>
       </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
         {/* 3D VIEWPORT */}
         <div className="lg:col-span-3 bg-slate-50 rounded-3xl shadow-inner border border-gray-200 overflow-hidden relative flex flex-col min-h-[50vh] lg:min-h-0">
-          {/* 👇 PASS THE FULL zonesData SO EACH TIER CAN CHECK ITS OWN LIGHT 👇 */}
-          <DynamicFarmScene
-            onSelectPart={setSelectedPart}
-            zonesData={zonesData}
-            fanStatus={globalFan}
-            pumpStatus={globalPump}
-          />
+          <DynamicFarmScene onSelectPart={setSelected} zonesData={zonesData} />
 
           <div className="absolute top-6 left-6 pointer-events-none max-w-[80%]">
             <div className="bg-white/90 backdrop-blur px-4 py-1.5 rounded-full text-xs font-bold text-green-700 shadow-sm border border-green-200 uppercase tracking-wide truncate">
-              {currentData.title}
+              {selected
+                ? `${selected.type.toUpperCase()}: ${selected.name.replace("_", " ")}`
+                : "OVERALL FARM"}
             </div>
           </div>
+
+          {/* --- FIX 2: RESTORED RESET VIEW BUTTON --- */}
           <div className="absolute bottom-6 left-6 right-6 flex justify-between pointer-events-none">
             <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-medium shadow-sm flex items-center gap-3 pointer-events-auto border border-gray-100 shrink-0">
               <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shrink-0"></div>
@@ -211,78 +231,120 @@ export default function DigitalTwin() {
               Reset View
             </button>
           </div>
+          {/* ------------------------------------------ */}
         </div>
 
         {/* SIDE PANELS */}
         <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-2">
-          {/* Sensor Panel */}
-          <div
-            key={`sensor-${selectedPart}`}
-            className="bg-green-600 text-white rounded-3xl p-6 shadow-xl shadow-green-200/50 animate-in fade-in slide-in-from-right-4 duration-500 fill-mode-both shrink-0"
-          >
-            <h3 className="text-lg font-semibold mb-1">Sensor Data</h3>
-            <p className="text-green-100 text-xs mb-5 uppercase tracking-wider truncate">
-              {currentData.title}
-            </p>
+          {/* SENSOR PANEL */}
+          <div className="bg-green-600 text-white rounded-3xl p-6 shadow-xl shrink-0">
+            <h3 className="text-lg font-semibold mb-5">Sensor Data</h3>
             <div className="space-y-4">
               <DataRow
                 icon={<Thermometer className="w-4 h-4 shrink-0" />}
                 label="Temperature"
-                value={currentData.temp}
+                value={`${currentData.sensorReading.temperature}°C`}
               />
               <DataRow
                 icon={<Droplets className="w-4 h-4 shrink-0" />}
                 label="Humidity"
-                value={currentData.humidity}
+                value={`${currentData.sensorReading.humidity}%`}
               />
               <DataRow
                 icon={<Activity className="w-4 h-4 shrink-0" />}
                 label="Soil Moisture"
-                value={currentData.moisture}
+                value={`${currentData.sensorReading.soilMoisture}%`}
               />
             </div>
           </div>
 
-          {/* Device Status Panel */}
+          {/* PLANT PROFILE PANEL */}
+          {selected?.type === "plant" && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-6 shadow-xl shrink-0">
+              <div className="flex items-center gap-2 mb-4 text-emerald-800 font-bold">
+                <Leaf className="w-5 h-5" />
+                <h3>{mockPlantProfile.cropName}</h3>
+              </div>
+              <div className="space-y-2 text-xs font-medium text-emerald-900/70">
+                <div className="flex justify-between">
+                  <span>Safe Temp:</span>{" "}
+                  <span>
+                    {mockPlantProfile.safeTemperatureRange.join(" - ")}°C
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Safe Humidity:</span>{" "}
+                  <span>{mockPlantProfile.safeHumidityRange.join(" - ")}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Target pH:</span>{" "}
+                  <span>{mockPlantProfile.safeWaterPhRange.join(" - ")}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DYNAMIC DEVICE STATUS PANEL */}
           <div className="bg-gray-900 text-white rounded-3xl p-6 shadow-xl flex-1 shrink-0">
-            <h3 className="text-lg font-semibold mb-5">Device Controls</h3>
+            <h3 className="text-lg font-semibold mb-5">
+              {showAllControls ? "Global Controls" : "Device Control"}
+            </h3>
             <div className="space-y-3">
-              <StatusCard
-                icon={<Lightbulb className="w-4 h-4" />}
-                title="LED Array"
-                subtitle={
-                  selectedPart.includes("_")
-                    ? `Zone ${selectedPart.split("_")[1]}`
-                    : "Photosynthesis"
-                }
-                status={currentData.led}
-                onClick={toggleLed}
-              />
-              <StatusCard
-                icon={<Wind className="w-4 h-4" />}
-                title="HVAC Fans"
-                subtitle="Global Circulation"
-                status={globalFan}
-                isWarning={globalFan === "OFF"}
-                onClick={toggleFan}
-              />
-              <StatusCard
-                icon={<Droplets className="w-4 h-4" />}
-                title="Nutrient Pump"
-                subtitle="Main Reservoir"
-                status={globalPump}
-                isError={globalPump === "ERROR"}
-                onClick={togglePump}
-              />
+              {showLed && (
+                <StatusCard
+                  icon={<Lightbulb className="w-4 h-4" />}
+                  title="LED Array"
+                  subtitle="Spectrum"
+                  status={currentData.deviceState.ledStatus}
+                  onClick={toggleLed}
+                />
+              )}
+              {showFan && (
+                <StatusCard
+                  icon={<Wind className="w-4 h-4" />}
+                  title="HVAC Fans"
+                  subtitle="Circulation"
+                  status={currentData.deviceState.fanStatus}
+                  onClick={() => toggleGlobalDevice("fanStatus")}
+                />
+              )}
+              {showPump && (
+                <StatusCard
+                  icon={<Droplets className="w-4 h-4" />}
+                  title="Nutrient Pump"
+                  subtitle="Reservoir"
+                  status={currentData.deviceState.pumpStatus}
+                  onClick={() => toggleGlobalDevice("pumpStatus")}
+                />
+              )}
             </div>
           </div>
+
+          {/* ALERTS & RECOMMENDATIONS */}
+          {currentData.recommendation &&
+            currentData.recommendation.severity !== "info" && (
+              <div className="bg-red-50 border border-red-200 rounded-3xl p-6 shadow-xl shrink-0">
+                <div className="flex items-center gap-2 mb-2 text-red-600 font-bold">
+                  <AlertTriangle className="w-5 h-5" />
+                  <h3>{currentData.recommendation.title}</h3>
+                </div>
+                <p className="text-sm text-red-800 mb-3">
+                  {currentData.recommendation.message}
+                </p>
+                <div className="bg-white rounded-xl p-3 border border-red-100 text-sm font-medium text-gray-700">
+                  <span className="text-red-500 font-bold block text-xs uppercase mb-1">
+                    Suggested Action
+                  </span>
+                  {currentData.recommendation.suggestedAction}
+                </div>
+              </div>
+            )}
         </div>
       </div>
     </div>
   );
 }
 
-// --- SUB-COMPONENTS ---
 function DataRow({
   icon,
   label,
@@ -310,58 +372,54 @@ function StatusCard({
   title,
   subtitle,
   status,
-  isError = false,
-  isWarning = false,
   onClick,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
-  status: string;
-  isError?: boolean;
-  isWarning?: boolean;
+  status: DeviceStatus;
   onClick: () => void;
 }) {
-  let stateStyles = "bg-green-500/20 text-green-300 border-green-500/20";
-  let iconBg = "bg-white/10 text-gray-300";
-  let textTitle = "text-gray-100";
-  let borderStyle = "border-transparent bg-white/5";
-  if (isError) {
-    stateStyles =
-      "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30";
-    iconBg = "bg-red-500/20 text-red-400";
-    textTitle = "text-red-300";
-    borderStyle = "border-red-500/30 bg-red-500/5";
-  } else if (isWarning || status === "OFF" || status === "STANDBY") {
-    stateStyles =
-      "bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30";
-    iconBg = "bg-yellow-500/20 text-yellow-400";
-    textTitle = "text-yellow-300";
-    borderStyle = "border-yellow-500/30 bg-yellow-500/5";
-  } else {
-    stateStyles += " hover:bg-green-500/30";
-  }
+  const styleMap = {
+    normal: {
+      bg: "bg-green-500/20 text-green-300 border-green-500/30",
+      icon: "bg-white/10 text-gray-300",
+    },
+    on: {
+      bg: "bg-green-500/20 text-green-300 border-green-500/30",
+      icon: "bg-white/10 text-gray-300",
+    },
+    warning: {
+      bg: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      icon: "bg-yellow-500/20 text-yellow-400",
+    },
+    critical: {
+      bg: "bg-red-500/20 text-red-400 border-red-500/30",
+      icon: "bg-red-500/20 text-red-400",
+    },
+    off: {
+      bg: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+      icon: "bg-gray-800 text-gray-500",
+    },
+  };
+  const currentStyle = styleMap[status] || styleMap.off;
 
   return (
-    <div
-      className={`rounded-2xl p-3.5 flex items-center justify-between border backdrop-blur-sm transition-colors ${borderStyle} gap-3`}
-    >
+    <div className="rounded-2xl p-3.5 flex items-center justify-between border border-white/5 bg-white/5 backdrop-blur-sm gap-3">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className={`p-2.5 rounded-xl shrink-0 ${iconBg}`}>{icon}</div>
+        <div className={`p-2.5 rounded-xl shrink-0 ${currentStyle.icon}`}>
+          {icon}
+        </div>
         <div className="flex-1 pr-2">
-          <div
-            className={`text-sm font-semibold tracking-wide leading-tight wrap-break-word whitespace-normal ${textTitle}`}
-          >
+          <div className="text-sm font-semibold tracking-wide text-gray-100">
             {title}
           </div>
-          <div className="text-xs text-gray-400 mt-0.5 leading-tight wrap-break-word whitespace-normal">
-            {subtitle}
-          </div>
+          <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>
         </div>
       </div>
       <button
         onClick={onClick}
-        className={`px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-wider border shrink-0 text-center wrap-break-word whitespace-normal max-w-36 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${stateStyles}`}
+        className={`px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-wider border shrink-0 text-center uppercase transition-all duration-200 hover:scale-105 ${currentStyle.bg}`}
       >
         {status}
       </button>
