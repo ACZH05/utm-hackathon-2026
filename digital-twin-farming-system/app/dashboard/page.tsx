@@ -115,24 +115,24 @@ export default function Dashboard() {
             <p className="text-gray-500">Overview of your vertical farm operations</p>
           </div>
           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-full bg-gray-100 animate-pulse" />
+             <div className="w-12 h-12 rounded-full skeleton" />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 animate-pulse">
-          <div className="h-[76px] rounded-2xl bg-gray-100" />
-          <div className="h-[76px] rounded-2xl bg-gray-100" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="h-[76px] rounded-2xl skeleton" />
+          <div className="h-[76px] rounded-2xl skeleton" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-[140px] rounded-3xl bg-gray-100" />
+            <div key={i} className="h-[140px] rounded-3xl skeleton" />
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-pulse">
-          <div className="h-[350px] rounded-3xl bg-gray-100" />
-          <div className="h-[350px] rounded-3xl bg-gray-100" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-[350px] rounded-3xl skeleton" />
+          <div className="h-[350px] rounded-3xl skeleton" />
         </div>
       </div>
     );
