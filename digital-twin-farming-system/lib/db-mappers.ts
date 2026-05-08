@@ -95,8 +95,9 @@ export interface AutomationSettingsRow {
 
 export interface AutomationLogRow {
   tray_id: unknown;
-  device_type: unknown;
-  action: unknown;
+  led_status: unknown;
+  fan_status: unknown;
+  pump_status: unknown;
   triggered_by: unknown;
   message: unknown;
   executed_at: unknown;
@@ -275,14 +276,13 @@ export function mapAutomationSettings(row: AutomationSettingsRow): AutomationSet
 }
 
 export function mapAutomationEvent(row: AutomationLogRow): AutomationEvent {
-  const device = toString(row.device_type);
-  const action = toString(row.action);
   const triggeredBy = toString(row.triggered_by);
 
   return {
     trayId: toString(row.tray_id),
-    device: device as "led" | "fan" | "pump",
-    action: action as "on" | "off",
+    ledStatus: row.led_status ? toDeviceStatus(row.led_status) : undefined,
+    fanStatus: row.fan_status ? toDeviceStatus(row.fan_status) : undefined,
+    pumpStatus: row.pump_status ? toDeviceStatus(row.pump_status) : undefined,
     triggeredBy: triggeredBy as "manual" | "ai" | "simulation",
     message: row.message ? toString(row.message) : "",
     createdAt: toIsoString(row.executed_at),

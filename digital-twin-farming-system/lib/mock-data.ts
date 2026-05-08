@@ -363,40 +363,29 @@ export function simulateAutomation(
   };
 
   let automationEvent: AutomationEvent | undefined;
+  const changedDevices: string[] = [];
+  const event: Partial<AutomationEvent> = {
+    trayId: currentDeviceState.trayId,
+    triggeredBy: "simulation",
+    createdAt: new Date().toISOString(),
+  };
 
-  if (deviceState.fanStatus !== currentDeviceState.fanStatus) {
-    automationEvent = {
-      device: "fan",
-      action: fanStatus,
-      triggeredBy: "simulation",
-      message:
-        fanStatus === "on"
-          ? `Fan activated because temperature reached ${sensorReading.temperature}°C.`
-          : "Fan deactivated because temperature returned below the trigger.",
-      createdAt: new Date().toISOString(),
-    };
-  } else if (deviceState.ledStatus !== currentDeviceState.ledStatus) {
-    automationEvent = {
-      device: "led",
-      action: ledStatus,
-      triggeredBy: "simulation",
-      message:
-        ledStatus === "on"
-          ? "LED schedule is active for the current mock time."
-          : "LED schedule is inactive for the current mock time.",
-      createdAt: new Date().toISOString(),
-    };
-  } else if (deviceState.pumpStatus !== currentDeviceState.pumpStatus) {
-    automationEvent = {
-      device: "pump",
-      action: pumpStatus,
-      triggeredBy: "simulation",
-      message:
-        pumpStatus === "on"
-          ? "Pump interval window is active for this simulation step."
-          : "Pump interval window has ended for this simulation step.",
-      createdAt: new Date().toISOString(),
-    };
+  if (ledStatus !== currentDeviceState.ledStatus) {
+    event.ledStatus = ledStatus;
+    changedDevices.push("LED");
+  }
+  if (fanStatus !== currentDeviceState.fanStatus) {
+    event.fanStatus = fanStatus;
+    changedDevices.push("Fan");
+  }
+  if (pumpStatus !== currentDeviceState.pumpStatus) {
+    event.pumpStatus = pumpStatus;
+    changedDevices.push("Pump");
+  }
+
+  if (changedDevices.length > 0) {
+    event.message = `${changedDevices.join(" and ")} state changed based on automation rules.`;
+    automationEvent = event as AutomationEvent;
   }
 
   return { deviceState, automationEvent };

@@ -640,9 +640,13 @@ export default function AutomationPage() {
           )}
 
           {automationEvent && !isBusy && (
-            <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-sm text-gray-700">
-              <span className="font-semibold">{automationEvent.device.toUpperCase()}</span>{" "}
-              {automationEvent.message}
+            <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-sm text-gray-700 flex items-center justify-between">
+              <span>{automationEvent.message}</span>
+              <div className="flex gap-2">
+                {automationEvent.ledStatus && statusBadge(automationEvent.ledStatus)}
+                {automationEvent.fanStatus && statusBadge(automationEvent.fanStatus)}
+                {automationEvent.pumpStatus && statusBadge(automationEvent.pumpStatus)}
+              </div>
             </div>
           )}
         </section>

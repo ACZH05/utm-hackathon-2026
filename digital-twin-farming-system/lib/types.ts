@@ -88,8 +88,9 @@ export interface AIAutomationRecommendation {
 
 export interface AutomationEvent {
   trayId: string;
-  device: "led" | "fan" | "pump";
-  action: "on" | "off";
+  ledStatus?: DeviceStatus;
+  fanStatus?: DeviceStatus;
+  pumpStatus?: DeviceStatus;
   triggeredBy: "manual" | "ai" | "simulation";
   message: string;
   createdAt: string;

@@ -32,8 +32,6 @@ export async function POST(request: Request) {
 
     await insertAutomationLog(sql, {
       trayId: automationSettings.trayId,
-      device: "led",
-      action: "on",
       triggeredBy: "manual",
       message: "Manual automation profile saved for LED, fan, and pump.",
       createdAt: new Date().toISOString(),

@@ -36,8 +36,6 @@ export async function POST(request: Request) {
 
     await insertAutomationLog(sql, {
       trayId: aiAutomationRecommendation.trayId,
-      device: "led",
-      action: "on",
       triggeredBy: "ai",
       message: `AI-assisted automation profile applied for ${aiAutomationRecommendation.cropName}.`,
       createdAt: new Date().toISOString(),

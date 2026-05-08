@@ -397,19 +397,21 @@ export async function insertAutomationLog(
   const rows = (await sql`
     INSERT INTO automation_logs (
       tray_id,
-      device_type,
-      action,
+      led_status,
+      fan_status,
+      pump_status,
       triggered_by,
       message
     )
     VALUES (
       ${event.trayId},
-      ${event.device},
-      ${event.action},
+      ${event.ledStatus ?? null},
+      ${event.fanStatus ?? null},
+      ${event.pumpStatus ?? null},
       ${event.triggeredBy},
       ${event.message}
     )
-    RETURNING tray_id, device_type, action, triggered_by, message, executed_at
+    RETURNING tray_id, led_status, fan_status, pump_status, triggered_by, message, executed_at
   `) as AutomationLogRow[];
 
   if (!rows[0]) {
