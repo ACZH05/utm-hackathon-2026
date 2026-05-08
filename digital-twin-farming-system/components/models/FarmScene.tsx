@@ -12,12 +12,10 @@ import {
 import * as THREE from "three";
 import { ProceduralFarm } from "./ProceduralFarm";
 
-// --- HOOK: Safe WebGL HMR Cleanup ---
 function WebGLCleanup() {
   const { gl } = useThree();
   useEffect(() => {
     return () => {
-      // Safely tell Three.js to dump its memory without crashing
       setTimeout(() => {
         gl.dispose();
       }, 0);
@@ -26,16 +24,13 @@ function WebGLCleanup() {
   return null;
 }
 
-// --- HOOK: WebGL Crash Guard ---
 function WebGLCrashGuard() {
   const { gl } = useThree();
   useEffect(() => {
     const canvas = gl.domElement;
     const handleContextLoss = (event: Event) => {
       event.preventDefault();
-      console.error(
-        "🚨 WebGL Context Lost! The GPU was overloaded. Refreshing...",
-      );
+      console.error("🚨 WebGL Context Lost!");
     };
     canvas.addEventListener("webglcontextlost", handleContextLoss, false);
     return () => {
@@ -45,7 +40,6 @@ function WebGLCrashGuard() {
   return null;
 }
 
-// Helper to handle the "Click to Zoom" logic
 function SelectToZoom({
   children,
   onReset,
@@ -72,10 +66,17 @@ function SelectToZoom({
   );
 }
 
+// 👇 UPDATE THE PROPS HERE 👇
 export default function FarmScene({
   onSelectPart,
+  zonesData,
+  fanStatus,
+  pumpStatus,
 }: {
   onSelectPart: (part: string) => void;
+  zonesData: Record<string, any>;
+  fanStatus: string;
+  pumpStatus: string;
 }) {
   return (
     <Canvas
@@ -99,7 +100,12 @@ export default function FarmScene({
 
       <Bounds fit clip observe margin={1.2}>
         <SelectToZoom onReset={() => onSelectPart("overall")}>
-          <ProceduralFarm onSelectPart={onSelectPart} />
+          <ProceduralFarm
+            onSelectPart={onSelectPart}
+            zonesData={zonesData}
+            fanStatus={fanStatus}
+            pumpStatus={pumpStatus}
+          />
         </SelectToZoom>
       </Bounds>
 
@@ -110,7 +116,6 @@ export default function FarmScene({
         scale={15}
         blur={2.5}
       />
-
       <OrbitControls
         makeDefault
         minPolarAngle={0}
