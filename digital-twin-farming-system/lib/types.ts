@@ -99,20 +99,10 @@ export interface SelectedComponent {
   name: string;
 }
 
-// --- NEW: Define the exact shape of your Automation Settings ---
-export interface AutomationSettings {
-  autoLighting: boolean;
-  autoClimate: boolean;
-  autoWatering: boolean;
-  targetTemperature: number;
-  targetHumidity: number;
-}
-
 export interface DigitalTwinState {
   sensorReading: SensorReading;
   deviceState: DeviceState;
   alerts: Alert[];
   recommendation: Recommendation;
-  // --- UPDATED: Add the new settings as an optional property ---
   automationSettings?: AutomationSettings;
 }
