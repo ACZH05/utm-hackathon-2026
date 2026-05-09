@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   Bot,
+  Check,
   ChevronDown,
   Clock3,
   Droplets,
@@ -83,6 +84,25 @@ export default function AutomationPage() {
   const [trays, setTrays] = useState<Tray[]>([]);
   const [selectedRackId, setSelectedRackId] = useState<string>("");
   const [selectedTrayId, setSelectedTrayId] = useState<string>("");
+
+  const [isRackOpen, setIsRackOpen] = useState(false);
+  const [isTrayOpen, setIsTrayOpen] = useState(false);
+  const rackDropdownRef = useRef<HTMLDivElement>(null);
+  const trayDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (rackDropdownRef.current && !rackDropdownRef.current.contains(event.target as Node)) {
+        setIsRackOpen(false);
+      }
+      if (trayDropdownRef.current && !trayDropdownRef.current.contains(event.target as Node)) {
+        setIsTrayOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const [dashboardState, setDashboardState] = useState<DigitalTwinState | null>(null);
   const [formState, setFormState] = useState<AutomationSettings>(
@@ -345,19 +365,46 @@ export default function AutomationPage() {
             <LayoutGrid className="h-4 w-4 text-primary" />
             Select Rack
           </div>
-          <div className="relative">
-            <select
-              value={selectedRackId}
-              onChange={(e) => setSelectedRackId(e.target.value)}
-              className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary"
+          <div className="relative" ref={rackDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsRackOpen(!isRackOpen)}
+              className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 ${
+                isRackOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+              }`}
             >
-              {racks.map((rack) => (
-                <option key={rack.id} value={rack.id}>
-                  {rack.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <span className="truncate">
+                {racks.find((r) => r.id === selectedRackId)?.name || "Select Rack"}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isRackOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {isRackOpen && (
+              <div className="absolute z-50 mt-2 w-full rounded-2xl border border-gray-100 bg-white p-2 shadow-lg">
+                <div className="max-h-60 overflow-y-auto space-y-1">
+                  {racks.map((rack) => {
+                    const isSelected = rack.id === selectedRackId;
+                    return (
+                      <div
+                        key={rack.id}
+                        onClick={() => {
+                          setSelectedRackId(rack.id);
+                          setIsRackOpen(false);
+                        }}
+                        className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
+                          isSelected
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-700 hover:bg-blue-50/50 hover:pl-5"
+                        }`}
+                      >
+                        <span className="truncate">{rack.name}</span>
+                        {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </label>
 
@@ -366,20 +413,47 @@ export default function AutomationPage() {
             <Layers className="h-4 w-4 text-primary" />
             Select Tray
           </div>
-          <div className="relative">
-            <select
-              value={selectedTrayId}
-              onChange={(e) => setSelectedTrayId(e.target.value)}
+          <div className="relative" ref={trayDropdownRef}>
+            <button
+              type="button"
+              onClick={() => !trays.length ? null : setIsTrayOpen(!isTrayOpen)}
               disabled={trays.length === 0}
-              className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50"
+              className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 disabled:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed ${
+                isTrayOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+              }`}
             >
-              {trays.map((tray) => (
-                <option key={tray.id} value={tray.id}>
-                  {tray.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <span className="truncate">
+                {trays.find((t) => t.id === selectedTrayId)?.name || "Select Tray"}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isTrayOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {isTrayOpen && trays.length > 0 && (
+              <div className="absolute z-50 mt-2 w-full rounded-2xl border border-gray-100 bg-white p-2 shadow-lg">
+                <div className="max-h-60 overflow-y-auto space-y-1">
+                  {trays.map((tray) => {
+                    const isSelected = tray.id === selectedTrayId;
+                    return (
+                      <div
+                        key={tray.id}
+                        onClick={() => {
+                          setSelectedTrayId(tray.id);
+                          setIsTrayOpen(false);
+                        }}
+                        className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
+                          isSelected
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-700 hover:bg-blue-50/50 hover:pl-5"
+                        }`}
+                      >
+                        <span className="truncate">{tray.name}</span>
+                        {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </label>
       </div>
