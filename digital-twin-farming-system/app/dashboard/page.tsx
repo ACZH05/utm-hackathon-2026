@@ -6,7 +6,7 @@ import {
   AreaChart, Area,
   PieChart, Pie, Cell
 } from 'recharts'
-import { Leaf, Droplet, Zap, AlertTriangle, CheckCircle2, TrendingUp, Sparkles, LayoutGrid, Layers } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, Droplet, Layers, LayoutGrid, Leaf, Sparkles, TrendingUp, Zap } from 'lucide-react'
 import type { DigitalTwinState, SensorReading, Rack, Tray } from '@/lib/types'
 
 // Mock Data for fields not in DB yet
@@ -95,7 +95,6 @@ export default function Dashboard() {
     fetchData();
   }, [selectedTrayId]);
 
-  const sensorReading = dashboardState?.sensorReading;
   const alerts = dashboardState?.alerts || [];
   const recommendation = dashboardState?.recommendation;
 
@@ -134,10 +133,11 @@ export default function Dashboard() {
           {racks.length === 0 ? (
             <div className="w-full h-[46px] rounded-2xl skeleton" />
           ) : (
+            <div className="relative">
             <select
               value={selectedRackId}
               onChange={(e) => setSelectedRackId(e.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary shadow-sm"
+              className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary shadow-sm"
             >
               {racks.map((rack) => (
                 <option key={rack.id} value={rack.id}>
@@ -145,6 +145,8 @@ export default function Dashboard() {
                 </option>
               ))}
             </select>
+            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          </div>
           )}
         </label>
 
@@ -156,11 +158,12 @@ export default function Dashboard() {
           {selectedRackId && trays.length === 0 && isLoading ? (
             <div className="w-full h-[46px] rounded-2xl skeleton" />
           ) : (
+            <div className="relative">
             <select
               value={selectedTrayId}
               onChange={(e) => setSelectedTrayId(e.target.value)}
               disabled={trays.length === 0}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50 shadow-sm"
+              className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50 shadow-sm"
             >
               {trays.map((tray) => (
                 <option key={tray.id} value={tray.id}>
@@ -168,6 +171,8 @@ export default function Dashboard() {
                 </option>
               ))}
             </select>
+            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          </div>
           )}
         </label>
       </div>

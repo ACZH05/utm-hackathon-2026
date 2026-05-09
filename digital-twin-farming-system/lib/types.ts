@@ -94,6 +94,8 @@ export interface AutomationEvent {
   triggeredBy: "manual" | "ai" | "simulation";
   message: string;
   createdAt: string;
+}
+
 export interface SelectedComponent {
   type: "plant" | "led" | "fan" | "pump" | "reservoir";
   name: string;

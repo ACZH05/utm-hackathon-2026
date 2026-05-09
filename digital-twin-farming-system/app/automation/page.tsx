@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Bot,
+  ChevronDown,
   Clock3,
   Droplets,
   Fan,
@@ -344,17 +345,20 @@ export default function AutomationPage() {
             <LayoutGrid className="h-4 w-4 text-primary" />
             Select Rack
           </div>
-          <select
-            value={selectedRackId}
-            onChange={(e) => setSelectedRackId(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-          >
-            {racks.map((rack) => (
-              <option key={rack.id} value={rack.id}>
-                {rack.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedRackId}
+              onChange={(e) => setSelectedRackId(e.target.value)}
+              className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary"
+            >
+              {racks.map((rack) => (
+                <option key={rack.id} value={rack.id}>
+                  {rack.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          </div>
         </label>
 
         <label className="space-y-2">
@@ -362,18 +366,21 @@ export default function AutomationPage() {
             <Layers className="h-4 w-4 text-primary" />
             Select Tray
           </div>
-          <select
-            value={selectedTrayId}
-            onChange={(e) => setSelectedTrayId(e.target.value)}
-            disabled={trays.length === 0}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50"
-          >
-            {trays.map((tray) => (
-              <option key={tray.id} value={tray.id}>
-                {tray.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedTrayId}
+              onChange={(e) => setSelectedTrayId(e.target.value)}
+              disabled={trays.length === 0}
+              className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50"
+            >
+              {trays.map((tray) => (
+                <option key={tray.id} value={tray.id}>
+                  {tray.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          </div>
         </label>
       </div>
 
@@ -426,22 +433,25 @@ export default function AutomationPage() {
               <span className="text-sm font-semibold text-gray-700">
                 LED Spectrum
               </span>
-              <select
-                value={formState.ledSpectrum}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    ledSpectrum: event.target
-                      .value as AutomationSettings["ledSpectrum"],
-                  }))
-                }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-              >
-                <option value="mixed">Mixed</option>
-                <option value="blue">Blue</option>
-                <option value="red">Red</option>
-                <option value="white">White</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={formState.ledSpectrum}
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      ledSpectrum: event.target
+                        .value as AutomationSettings["ledSpectrum"],
+                    }))
+                  }
+                  className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary"
+                >
+                  <option value="mixed">Mixed</option>
+                  <option value="blue">Blue</option>
+                  <option value="red">Red</option>
+                  <option value="white">White</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              </div>
             </label>
 
             <label className="space-y-2">
