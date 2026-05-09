@@ -106,38 +106,6 @@ export default function Dashboard() {
     humidity: h.humidity
   }));
 
-  if (isLoading && !dashboardState) {
-    return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Farming Dashboard</h1>
-            <p className="text-gray-500">Overview of your vertical farm operations</p>
-          </div>
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-full skeleton" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="h-[76px] rounded-2xl skeleton" />
-          <div className="h-[76px] rounded-2xl skeleton" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-[140px] rounded-3xl skeleton" />
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-[350px] rounded-3xl skeleton" />
-          <div className="h-[350px] rounded-3xl skeleton" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between mb-8">
@@ -146,9 +114,13 @@ export default function Dashboard() {
           <p className="text-gray-500">Overview of your vertical farm operations</p>
         </div>
         <div className="flex items-center gap-4">
-           <svg className="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" />
-           </svg>
+           {isLoading && !dashboardState ? (
+             <div className="w-12 h-12 rounded-full skeleton" />
+           ) : (
+             <svg className="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" />
+             </svg>
+           )}
         </div>
       </div>
 
@@ -159,17 +131,21 @@ export default function Dashboard() {
             <LayoutGrid className="h-4 w-4 text-primary" />
             Select Rack
           </div>
-          <select
-            value={selectedRackId}
-            onChange={(e) => setSelectedRackId(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary shadow-sm"
-          >
-            {racks.map((rack) => (
-              <option key={rack.id} value={rack.id}>
-                {rack.name}
-              </option>
-            ))}
-          </select>
+          {racks.length === 0 ? (
+            <div className="w-full h-[46px] rounded-2xl skeleton" />
+          ) : (
+            <select
+              value={selectedRackId}
+              onChange={(e) => setSelectedRackId(e.target.value)}
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary shadow-sm"
+            >
+              {racks.map((rack) => (
+                <option key={rack.id} value={rack.id}>
+                  {rack.name}
+                </option>
+              ))}
+            </select>
+          )}
         </label>
 
         <label className="space-y-2">
@@ -177,18 +153,22 @@ export default function Dashboard() {
             <Layers className="h-4 w-4 text-primary" />
             Select Tray
           </div>
-          <select
-            value={selectedTrayId}
-            onChange={(e) => setSelectedTrayId(e.target.value)}
-            disabled={trays.length === 0}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50 shadow-sm"
-          >
-            {trays.map((tray) => (
-              <option key={tray.id} value={tray.id}>
-                {tray.name}
-              </option>
-            ))}
-          </select>
+          {selectedRackId && trays.length === 0 && isLoading ? (
+            <div className="w-full h-[46px] rounded-2xl skeleton" />
+          ) : (
+            <select
+              value={selectedTrayId}
+              onChange={(e) => setSelectedTrayId(e.target.value)}
+              disabled={trays.length === 0}
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50 shadow-sm"
+            >
+              {trays.map((tray) => (
+                <option key={tray.id} value={tray.id}>
+                  {tray.name}
+                </option>
+              ))}
+            </select>
+          )}
         </label>
       </div>
 
@@ -236,47 +216,56 @@ export default function Dashboard() {
         <div className="bg-card rounded-3xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Alerts & Recommendations</h3>
           <div className="space-y-4">
-            {alerts.length > 0 ? (
-              alerts.map((alert, index) => (
-                <div key={index} className={`flex items-start gap-4 p-4 border rounded-2xl ${
-                  alert.severity === 'critical' ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'
-                }`}>
-                  <div className={`p-2 rounded-full ${
-                    alert.severity === 'critical' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
-                  }`}>
-                    <AlertTriangle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className={`font-semibold ${alert.severity === 'critical' ? 'text-red-800' : 'text-amber-800'}`}>{alert.type.toUpperCase()} Alert</h4>
-                    <p className={`text-sm ${alert.severity === 'critical' ? 'text-red-600' : 'text-amber-600'} mb-2`}>{alert.message}</p>
-                  </div>
-                </div>
-              ))
+            {isLoading && !dashboardState ? (
+              <div className="space-y-4">
+                <div className="h-24 rounded-2xl skeleton" />
+                <div className="h-28 rounded-2xl skeleton" />
+              </div>
             ) : (
-              <div className="flex items-start gap-4 p-4 border border-green-100 bg-green-50 rounded-2xl">
-                <div className="bg-green-100 p-2 rounded-full text-green-600">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-800">System Stable</h4>
-                  <p className="text-sm text-green-600">All sensors report values within safe operating ranges.</p>
-                </div>
-              </div>
-            )}
-            
-            {recommendation && (
-              <div className="flex items-start gap-4 p-4 border border-primary/20 bg-primary/5 rounded-2xl">
-                <div className="bg-primary/10 p-2 rounded-full text-primary">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800">{recommendation.title}</h4>
-                  <p className="text-sm text-gray-600 mb-2">{recommendation.message}</p>
-                  <div className="inline-flex items-center gap-1 text-xs font-medium bg-white px-3 py-1 rounded-full border border-primary/20 text-primary">
-                    <Zap className="w-3 h-3" /> Suggested: {recommendation.suggestedAction}
+              <>
+                {alerts.length > 0 ? (
+                  alerts.map((alert, index) => (
+                    <div key={index} className={`flex items-start gap-4 p-4 border rounded-2xl ${
+                      alert.severity === 'critical' ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'
+                    }`}>
+                      <div className={`p-2 rounded-full ${
+                        alert.severity === 'critical' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                      }`}>
+                        <AlertTriangle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className={`font-semibold ${alert.severity === 'critical' ? 'text-red-800' : 'text-amber-800'}`}>{alert.type.toUpperCase()} Alert</h4>
+                        <p className={`text-sm ${alert.severity === 'critical' ? 'text-red-600' : 'text-amber-600'} mb-2`}>{alert.message}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-start gap-4 p-4 border border-green-100 bg-green-50 rounded-2xl">
+                    <div className="bg-green-100 p-2 rounded-full text-green-600">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-green-800">System Stable</h4>
+                      <p className="text-sm text-green-600">All sensors report values within safe operating ranges.</p>
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
+                
+                {recommendation && (
+                  <div className="flex items-start gap-4 p-4 border border-primary/20 bg-primary/5 rounded-2xl">
+                    <div className="bg-primary/10 p-2 rounded-full text-primary">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-800">{recommendation.title}</h4>
+                      <p className="text-sm text-gray-600 mb-2">{recommendation.message}</p>
+                      <div className="inline-flex items-center gap-1 text-xs font-medium bg-white px-3 py-1 rounded-full border border-primary/20 text-primary">
+                        <Zap className="w-3 h-3" /> Suggested: {recommendation.suggestedAction}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -332,26 +321,30 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-card rounded-3xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Historical Sensor Trends</h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#C49646" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#C49646" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorHum" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3D5654" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3D5654" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
-                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                <Area type="monotone" dataKey="temp" stroke="#C49646" strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" />
-                <Area type="monotone" dataKey="humidity" stroke="#3D5654" strokeWidth={3} fillOpacity={1} fill="url(#colorHum)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {isLoading && history.length === 0 ? (
+              <div className="w-full h-full rounded-2xl skeleton" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#C49646" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#C49646" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorHum" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3D5654" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3D5654" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                  <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
+                  <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Area type="monotone" dataKey="temp" stroke="#C49646" strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" />
+                  <Area type="monotone" dataKey="humidity" stroke="#3D5654" strokeWidth={3} fillOpacity={1} fill="url(#colorHum)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
