@@ -34,6 +34,7 @@ const DynamicFarmScene = dynamic(
 );
 
 const defaultRec: Recommendation = {
+  trayId: "overall",
   title: "System OK",
   message: "All parameters nominal.",
   suggestedAction: "Continue standard operation",
@@ -42,6 +43,7 @@ const defaultRec: Recommendation = {
 };
 
 const mockPlantProfile: PlantProfile = {
+  id: "lettuce-001",
   cropName: "Butterhead Lettuce",
   safeTemperatureRange: [18, 24],
   safeHumidityRange: [50, 70],
@@ -51,6 +53,7 @@ const mockPlantProfile: PlantProfile = {
 };
 
 const defaultDeviceState: DeviceState = {
+  trayId: "overall",
   ledStatus: "on",
   fanStatus: "on",
   pumpStatus: "critical",
@@ -58,17 +61,21 @@ const defaultDeviceState: DeviceState = {
 };
 
 const defaultAutomationSettings: AutomationSettings = {
-  autoLighting: true,
-  autoClimate: true,
-  autoWatering: true,
-  targetTemperature: 22,
-  targetHumidity: 65,
+  trayId: "overall",
+  mode: "manual",
+  ledStartTime: "07:00",
+  ledEndTime: "19:00",
+  ledSpectrum: "mixed",
+  fanTriggerTemperature: 24,
+  pumpIntervalMinutes: 30,
+  pumpDurationSeconds: 90,
 };
 
 const createMockState = (
   overrides?: Partial<DigitalTwinState>,
 ): DigitalTwinState => ({
   sensorReading: {
+    trayId: "overall",
     temperature: 24,
     humidity: 60,
     soilMoisture: 75,
@@ -87,6 +94,7 @@ const initialFarmData: Record<string, DigitalTwinState> = {
   overall: createMockState({
     alerts: [
       {
+        trayId: "overall",
         type: "HARDWARE",
         severity: "critical",
         message: "Pump pressure drop detected",
@@ -94,6 +102,7 @@ const initialFarmData: Record<string, DigitalTwinState> = {
       },
     ],
     recommendation: {
+      trayId: "overall",
       title: "Maintenance Required",
       message: "Main pump is showing critical flow resistance.",
       suggestedAction: "Inspect check valve",
