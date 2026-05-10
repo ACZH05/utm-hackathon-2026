@@ -882,7 +882,23 @@ export default function AutomationPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-4 flex items-center justify-between">
-                  <Lightbulb className="h-5 w-5 text-primary" />
+                  <div className="relative p-1">
+                    <Lightbulb className="h-5 w-5 text-primary" />
+                    {activeDeviceState?.ledStatus.toLowerCase() === "on" && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        {[0, 45, 90, -45, -90].map((angle) => (
+                          <div
+                            key={angle}
+                            className="animate-ray-blink absolute left-1/2 top-1/2 h-1.5 w-0.5 origin-bottom bg-primary"
+                            style={{
+                              "--angle": `${angle}deg`,
+                              transform: `translate(-50%, -150%) rotate(${angle}deg) translateY(-8px)`,
+                            } as React.CSSProperties}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {activeDeviceState && statusBadge(activeDeviceState.ledStatus)}
                 </div>
                 <div className="font-semibold text-gray-800">LED Lights</div>
@@ -893,7 +909,7 @@ export default function AutomationPage() {
 
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-4 flex items-center justify-between">
-                  <Fan className="h-5 w-5 text-primary" />
+                  <Fan className={`h-5 w-5 text-primary ${activeDeviceState?.fanStatus.toLowerCase() === "on" ? "animate-fan-spin" : ""}`} />
                   {activeDeviceState && statusBadge(activeDeviceState.fanStatus)}
                 </div>
                 <div className="font-semibold text-gray-800">Cooling Fan</div>
@@ -904,7 +920,7 @@ export default function AutomationPage() {
 
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-4 flex items-center justify-between">
-                  <Droplets className="h-5 w-5 text-primary" />
+                  <Droplets className={`h-5 w-5 text-primary ${activeDeviceState?.pumpStatus.toLowerCase() === "on" ? "animate-pump-bounce" : ""}`} />
                   {activeDeviceState && statusBadge(activeDeviceState.pumpStatus)}
                 </div>
                 <div className="font-semibold text-gray-800">Water Pump</div>
@@ -1000,6 +1016,7 @@ export default function AutomationPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-100 text-gray-400">
+                <th className="pb-4 font-semibold">Date</th>
                 <th className="pb-4 font-semibold">Time</th>
                 <th className="pb-4 font-semibold">Source</th>
                 <th className="pb-4 font-semibold">Message</th>
@@ -1010,6 +1027,13 @@ export default function AutomationPage() {
               {automationLogs.length > 0 ? (
                 automationLogs.map((log, idx) => (
                   <tr key={idx} className="group">
+                    <td className="py-4 text-gray-500">
+                      {new Date(log.createdAt).toLocaleDateString([], {
+                        month: "short",
+                        day: "2-digit",
+                        year: "numeric",
+                      })}
+                    </td>
                     <td className="py-4 text-gray-500">
                       {new Date(log.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
