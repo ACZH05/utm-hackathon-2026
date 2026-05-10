@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import gsap from "gsap";
 import {
   Bot,
+  Check,
+  ChevronDown,
   Clock3,
   Droplets,
   Fan,
@@ -82,12 +85,151 @@ function formatSpectrum(spectrum: AutomationSettings["ledSpectrum"]) {
   return spectrum.charAt(0).toUpperCase() + spectrum.slice(1);
 }
 
+function TimePickerDropdown({
+  value,
+  onChange,
+  isOpen,
+  setIsOpen,
+  dropdownRef,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  isOpen: boolean;
+  setIsOpen: (val: boolean) => void;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [h, m] = value.split(":");
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"));
+
+  return (
+    <div className="relative group" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm transition-all duration-300 ${
+          isOpen
+            ? "border-primary ring-2 ring-primary/20"
+            : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <Clock3 className={`h-4 w-4 transition-colors ${isOpen ? "text-primary" : "text-gray-400"}`} />
+          <span className="text-gray-700 font-medium">{value}</span>
+        </div>
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? "rotate-180 text-primary" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl left-0 md:left-auto md:right-0">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-gray-400">Hours</div>
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                {hours.map((hour) => (
+                  <div
+                    key={hour}
+                    onClick={() => onChange(`${hour}:${m}`)}
+                    className={`cursor-pointer rounded-lg px-2 py-1.5 text-center text-sm transition-all ${
+                      hour === h
+                        ? "bg-primary text-white font-bold"
+                        : "text-gray-600 hover:bg-primary/10 hover:text-primary"
+                    }`}
+                  >
+                    {hour}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="w-px bg-gray-100 my-2" />
+            <div className="flex-1">
+              <div className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-gray-400">Mins</div>
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                {minutes.map((min) => (
+                  <div
+                    key={min}
+                    onClick={() => onChange(`${h}:${min}`)}
+                    className={`cursor-pointer rounded-lg px-2 py-1.5 text-center text-sm transition-all ${
+                      min === m
+                        ? "bg-primary text-white font-bold"
+                        : "text-gray-600 hover:bg-primary/10 hover:text-primary"
+                    }`}
+                  >
+                    {min}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AutomationPage() {
   const [racks, setRacks] = useState<Rack[]>([]);
   const [trays, setTrays] = useState<Tray[]>([]);
   const [selectedRackId, setSelectedRackId] = useState<string>("");
   const [selectedTrayId, setSelectedTrayId] = useState<string>("");
 
+  const [isRackOpen, setIsRackOpen] = useState(false);
+  const [isTrayOpen, setIsTrayOpen] = useState(false);
+  const [isSpectrumOpen, setIsSpectrumOpen] = useState(false);
+  const [isStartTimeOpen, setIsStartTimeOpen] = useState(false);
+  const [isEndTimeOpen, setIsEndTimeOpen] = useState(false);
+  const [isMockTimeOpen, setIsMockTimeOpen] = useState(false);
+
+  const rackDropdownRef = useRef<HTMLDivElement>(null);
+  const trayDropdownRef = useRef<HTMLDivElement>(null);
+  const spectrumDropdownRef = useRef<HTMLDivElement>(null);
+  const startTimeDropdownRef = useRef<HTMLDivElement>(null);
+  const endTimeDropdownRef = useRef<HTMLDivElement>(null);
+  const mockTimeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const saveBtnRef = useRef<HTMLButtonElement>(null);
+  const genAiBtnRef = useRef<HTMLButtonElement>(null);
+  const applyAiBtnRef = useRef<HTMLButtonElement>(null);
+  const runBtnRef = useRef<HTMLButtonElement>(null);
+
+  const animateClick = (element: HTMLElement | null) => {
+    if (!element) return;
+    gsap.to(element, {
+      scale: 0.95,
+      duration: 0.1,
+      yoyo: true,
+      repeat: 1,
+      ease: "power2.inOut",
+    });
+  };
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (rackDropdownRef.current && !rackDropdownRef.current.contains(event.target as Node)) {
+        setIsRackOpen(false);
+      }
+      if (trayDropdownRef.current && !trayDropdownRef.current.contains(event.target as Node)) {
+        setIsTrayOpen(false);
+      }
+      if (spectrumDropdownRef.current && !spectrumDropdownRef.current.contains(event.target as Node)) {
+        setIsSpectrumOpen(false);
+      }
+      if (startTimeDropdownRef.current && !startTimeDropdownRef.current.contains(event.target as Node)) {
+        setIsStartTimeOpen(false);
+      }
+      if (endTimeDropdownRef.current && !endTimeDropdownRef.current.contains(event.target as Node)) {
+        setIsEndTimeOpen(false);
+      }
+      if (mockTimeDropdownRef.current && !mockTimeDropdownRef.current.contains(event.target as Node)) {
+        setIsMockTimeOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const [dashboardState, setDashboardState] = useState<DigitalTwinState | null>(null);
   const [dashboardState, setDashboardState] = useState<DigitalTwinState | null>(
     null,
   );
@@ -103,7 +245,9 @@ export default function AutomationPage() {
   const [automationLogs, setAutomationLogs] = useState<AutomationEvent[]>([]);
   const [mockCurrentTime, setMockCurrentTime] = useState("12:00");
   const [statusMessage, setStatusMessage] = useState("Loading racks...");
-  const [isBusy, setIsBusy] = useState(false);
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+
+  const isBusy = activeAction !== null;
 
   async function loadLogs(trayId: string) {
     try {
@@ -122,6 +266,17 @@ export default function AutomationPage() {
   useEffect(() => {
     async function loadRacks() {
       const response = await fetch("/api/racks");
+      const data = (await response.json()) as Rack[];
+      
+      if (!Array.isArray(data)) {
+        setRacks([]);
+        setStatusMessage("Invalid rack data received.");
+        return;
+      }
+
+      setRacks(data);
+      if (data.length > 0) {
+        setSelectedRackId(data[0].id);
       const payload = await response.json();
 
       if (!Array.isArray(payload)) {
@@ -150,6 +305,13 @@ export default function AutomationPage() {
     async function loadTrays() {
       const response = await fetch(`/api/trays?rackId=${selectedRackId}`);
       const data = (await response.json()) as Tray[];
+
+      if (!Array.isArray(data)) {
+        setTrays([]);
+        setStatusMessage("Invalid tray data received.");
+        return;
+      }
+
       setTrays(data);
       if (data.length > 0) {
         setSelectedTrayId(data[0].id);
@@ -165,7 +327,7 @@ export default function AutomationPage() {
   useEffect(() => {
     async function loadDashboardState(trayId: string) {
       if (!trayId) return;
-      setIsBusy(true);
+      setActiveAction("load");
       setStatusMessage("Loading tray state...");
       try {
         const response = await fetch(`/api/dashboard?trayId=${trayId}`);
@@ -190,7 +352,7 @@ export default function AutomationPage() {
             : "Unable to load automation state.";
         setStatusMessage(message);
       } finally {
-        setIsBusy(false);
+        setActiveAction(null);
       }
     }
 
@@ -230,7 +392,7 @@ export default function AutomationPage() {
 
   async function handleSaveManualSettings() {
     if (!selectedTrayId) return;
-    setIsBusy(true);
+    setActiveAction("save");
     setStatusMessage("Saving manual automation profile...");
 
     try {
@@ -256,13 +418,13 @@ export default function AutomationPage() {
           : "Unable to save manual settings.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
   async function handleGenerateAiSettings() {
     if (!selectedTrayId || !sensorReading) return;
-    setIsBusy(true);
+    setActiveAction("generate");
     setStatusMessage("Generating rule-based AI-assisted settings...");
 
     try {
@@ -279,7 +441,7 @@ export default function AutomationPage() {
         error instanceof Error ? error.message : "Unable to generate settings.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
@@ -289,7 +451,7 @@ export default function AutomationPage() {
       return;
     }
 
-    setIsBusy(true);
+    setActiveAction("apply");
     setStatusMessage("Applying AI-assisted automation profile...");
 
     try {
@@ -314,13 +476,13 @@ export default function AutomationPage() {
         error instanceof Error ? error.message : "Unable to apply AI settings.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
   async function handleRunSimulation() {
     if (!selectedTrayId) return;
-    setIsBusy(true);
+    setActiveAction("run");
     setStatusMessage("Running automation simulation...");
 
     try {
@@ -342,7 +504,7 @@ export default function AutomationPage() {
         error instanceof Error ? error.message : "Unable to run simulation.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
@@ -368,17 +530,47 @@ export default function AutomationPage() {
             <LayoutGrid className="h-4 w-4 text-primary" />
             Select Rack
           </div>
-          <select
-            value={selectedRackId}
-            onChange={(e) => setSelectedRackId(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-          >
-            {racks.map((rack) => (
-              <option key={rack.id} value={rack.id}>
-                {rack.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative" ref={rackDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsRackOpen(!isRackOpen)}
+              className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 ${
+                isRackOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+              }`}
+            >
+              <span className="truncate">
+                {racks.find((r) => r.id === selectedRackId)?.name || "Select Rack"}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isRackOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {isRackOpen && (
+              <div className="absolute z-50 mt-2 w-full rounded-2xl border border-gray-100 bg-white p-2 shadow-lg">
+                <div className="max-h-60 overflow-y-auto space-y-1">
+                  {racks.map((rack) => {
+                    const isSelected = rack.id === selectedRackId;
+                    return (
+                      <div
+                        key={rack.id}
+                        onClick={() => {
+                          setSelectedRackId(rack.id);
+                          setIsRackOpen(false);
+                        }}
+                        className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
+                          isSelected
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-gray-700 hover:bg-primary/5 hover:pl-5"
+                        }`}
+                      >
+                        <span className="truncate">{rack.name}</span>
+                        {isSelected && <Check className="h-4 w-4 text-primary" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </label>
 
         <label className="space-y-2">
@@ -386,18 +578,48 @@ export default function AutomationPage() {
             <Layers className="h-4 w-4 text-primary" />
             Select Tray
           </div>
-          <select
-            value={selectedTrayId}
-            onChange={(e) => setSelectedTrayId(e.target.value)}
-            disabled={trays.length === 0}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:bg-gray-50"
-          >
-            {trays.map((tray) => (
-              <option key={tray.id} value={tray.id}>
-                {tray.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative" ref={trayDropdownRef}>
+            <button
+              type="button"
+              onClick={() => !trays.length ? null : setIsTrayOpen(!isTrayOpen)}
+              disabled={trays.length === 0}
+              className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 disabled:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed ${
+                isTrayOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+              }`}
+            >
+              <span className="truncate">
+                {trays.find((t) => t.id === selectedTrayId)?.name || "Select Tray"}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isTrayOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {isTrayOpen && trays.length > 0 && (
+              <div className="absolute z-50 mt-2 w-full rounded-2xl border border-gray-100 bg-white p-2 shadow-lg">
+                <div className="max-h-60 overflow-y-auto space-y-1">
+                  {trays.map((tray) => {
+                    const isSelected = tray.id === selectedTrayId;
+                    return (
+                      <div
+                        key={tray.id}
+                        onClick={() => {
+                          setSelectedTrayId(tray.id);
+                          setIsTrayOpen(false);
+                        }}
+                        className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
+                          isSelected
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-gray-700 hover:bg-primary/5 hover:pl-5"
+                        }`}
+                      >
+                        <span className="truncate">{tray.name}</span>
+                        {isSelected && <Check className="h-4 w-4 text-primary" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </label>
       </div>
 
@@ -408,8 +630,11 @@ export default function AutomationPage() {
               <h2 className="text-xl font-semibold text-gray-800">
                 Manual Schedule
               </h2>
-              <p className="text-sm text-gray-500">
-                Active mode: {formState.mode.toUpperCase()}
+              <p className="text-sm font-medium">
+                <span className="text-gray-500">Active mode: </span>
+                <span className={`${formState.mode === "ai" ? "text-flow-ai" : "text-flow"} font-bold`}>
+                  {formState.mode.toUpperCase()}
+                </span>
               </p>
             </div>
             <SlidersHorizontal className="h-6 w-6 text-primary" />
@@ -417,36 +642,34 @@ export default function AutomationPage() {
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <label className="space-y-2">
+              <span className="text-sm font-semibold text-gray-700">LED Start</span>
+              <TimePickerDropdown
               <span className="text-sm font-semibold text-gray-700">
                 LED Start
               </span>
               <input
                 type="time"
                 value={formState.ledStartTime}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    ledStartTime: event.target.value,
-                  }))
-                }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                onChange={(val) => setFormState((curr) => ({ ...curr, ledStartTime: val }))}
+                isOpen={isStartTimeOpen}
+                setIsOpen={setIsStartTimeOpen}
+                dropdownRef={startTimeDropdownRef}
               />
             </label>
 
             <label className="space-y-2">
+              <span className="text-sm font-semibold text-gray-700">LED End</span>
+              <TimePickerDropdown
               <span className="text-sm font-semibold text-gray-700">
                 LED End
               </span>
               <input
                 type="time"
                 value={formState.ledEndTime}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    ledEndTime: event.target.value,
-                  }))
-                }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                onChange={(val) => setFormState((curr) => ({ ...curr, ledEndTime: val }))}
+                isOpen={isEndTimeOpen}
+                setIsOpen={setIsEndTimeOpen}
+                dropdownRef={endTimeDropdownRef}
               />
             </label>
 
@@ -454,22 +677,50 @@ export default function AutomationPage() {
               <span className="text-sm font-semibold text-gray-700">
                 LED Spectrum
               </span>
-              <select
-                value={formState.ledSpectrum}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    ledSpectrum: event.target
-                      .value as AutomationSettings["ledSpectrum"],
-                  }))
-                }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-              >
-                <option value="mixed">Mixed</option>
-                <option value="blue">Blue</option>
-                <option value="red">Red</option>
-                <option value="white">White</option>
-              </select>
+              <div className="relative" ref={spectrumDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsSpectrumOpen(!isSpectrumOpen)}
+                  className={`w-full flex items-center justify-between rounded-2xl border bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 ${
+                    isSpectrumOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+                  }`}
+                >
+                  <span className="truncate capitalize">
+                    {formState.ledSpectrum}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isSpectrumOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isSpectrumOpen && (
+                  <div className="absolute z-50 mt-2 w-full rounded-2xl border border-gray-100 bg-white p-2 shadow-lg">
+                    <div className="max-h-60 overflow-y-auto space-y-1">
+                      {(["mixed", "blue", "red", "white"] as const).map((spectrum) => {
+                        const isSelected = spectrum === formState.ledSpectrum;
+                        return (
+                          <div
+                            key={spectrum}
+                            onClick={() => {
+                              setFormState((current) => ({
+                                ...current,
+                                ledSpectrum: spectrum,
+                              }));
+                              setIsSpectrumOpen(false);
+                            }}
+                            className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 capitalize ${
+                              isSelected
+                                ? "bg-primary/10 text-primary font-medium"
+                                : "text-gray-700 hover:bg-primary/5 hover:pl-5"
+                            }`}
+                          >
+                            <span className="truncate">{spectrum}</span>
+                            {isSelected && <Check className="h-4 w-4 text-primary" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </label>
 
             <label className="space-y-2">
@@ -487,7 +738,7 @@ export default function AutomationPage() {
                     fanTriggerTemperature: Number(event.target.value),
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
 
@@ -505,7 +756,7 @@ export default function AutomationPage() {
                     pumpIntervalMinutes: Number(event.target.value),
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
 
@@ -523,35 +774,47 @@ export default function AutomationPage() {
                     pumpDurationSeconds: Number(event.target.value),
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button
+              ref={saveBtnRef}
               type="button"
-              onClick={handleSaveManualSettings}
+              onClick={() => {
+                animateClick(saveBtnRef.current);
+                void handleSaveManualSettings();
+              }}
               disabled={isBusy}
-              className="inline-flex items-center gap-2 rounded-2xl bg-sidebar px-5 py-3 text-sm font-semibold text-white transition hover:bg-sidebar/90 disabled:opacity-60"
+              className={`inline-flex items-center gap-2 rounded-2xl bg-sidebar px-5 py-3 text-sm font-semibold text-white transition hover:bg-sidebar/90 ${activeAction === "save" ? "opacity-60" : ""}`}
             >
               <Save className="h-4 w-4" />
               Save Manual
             </button>
             <button
+              ref={genAiBtnRef}
               type="button"
-              onClick={handleGenerateAiSettings}
+              onClick={() => {
+                animateClick(genAiBtnRef.current);
+                void handleGenerateAiSettings();
+              }}
               disabled={isBusy}
-              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
+              className={`inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 ${activeAction === "generate" ? "opacity-60" : ""}`}
             >
               <Sparkles className="h-4 w-4" />
               Generate AI Settings
             </button>
             <button
+              ref={applyAiBtnRef}
               type="button"
-              onClick={handleApplyAiSettings}
+              onClick={() => {
+                animateClick(applyAiBtnRef.current);
+                void handleApplyAiSettings();
+              }}
               disabled={isBusy || !aiRecommendation}
-              className="inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50"
+              className={`inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10 ${activeAction === "apply" ? "opacity-50" : ""}`}
             >
               <Zap className="h-4 w-4" />
               Apply AI
@@ -629,17 +892,22 @@ export default function AutomationPage() {
               </p>
             </div>
             <div className="flex gap-3">
-              <input
-                type="time"
+              <TimePickerDropdown
                 value={mockCurrentTime}
-                onChange={(event) => setMockCurrentTime(event.target.value)}
-                className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                onChange={(val) => setMockCurrentTime(val)}
+                isOpen={isMockTimeOpen}
+                setIsOpen={setIsMockTimeOpen}
+                dropdownRef={mockTimeDropdownRef}
               />
               <button
+                ref={runBtnRef}
                 type="button"
-                onClick={handleRunSimulation}
+                onClick={() => {
+                  animateClick(runBtnRef.current);
+                  void handleRunSimulation();
+                }}
                 disabled={isBusy}
-                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
+                className={`inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 ${activeAction === "run" ? "opacity-60" : ""}`}
               >
                 <Play className="h-4 w-4" />
                 Run
@@ -657,6 +925,24 @@ export default function AutomationPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-4 flex items-center justify-between">
+                  <div className="relative p-1">
+                    <Lightbulb className="h-5 w-5 text-primary" />
+                    {activeDeviceState?.ledStatus.toLowerCase() === "on" && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        {[0, 45, 90, -45, -90].map((angle) => (
+                          <div
+                            key={angle}
+                            className="animate-ray-blink absolute left-1/2 top-1/2 h-1.5 w-0.5 origin-bottom bg-primary"
+                            style={{
+                              "--angle": `${angle}deg`,
+                              transform: `translate(-50%, -150%) rotate(${angle}deg) translateY(-8px)`,
+                            } as React.CSSProperties}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {activeDeviceState && statusBadge(activeDeviceState.ledStatus)}
                   <Lightbulb className="h-5 w-5 text-primary" />
                   {activeDeviceState &&
                     statusBadge(activeDeviceState.ledStatus)}
@@ -669,6 +955,8 @@ export default function AutomationPage() {
 
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-4 flex items-center justify-between">
+                  <Fan className={`h-5 w-5 text-primary ${activeDeviceState?.fanStatus.toLowerCase() === "on" ? "animate-fan-spin" : ""}`} />
+                  {activeDeviceState && statusBadge(activeDeviceState.fanStatus)}
                   <Fan className="h-5 w-5 text-primary" />
                   {activeDeviceState &&
                     statusBadge(activeDeviceState.fanStatus)}
@@ -681,6 +969,8 @@ export default function AutomationPage() {
 
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-4 flex items-center justify-between">
+                  <Droplets className={`h-5 w-5 text-primary ${activeDeviceState?.pumpStatus.toLowerCase() === "on" ? "animate-pump-bounce" : ""}`} />
+                  {activeDeviceState && statusBadge(activeDeviceState.pumpStatus)}
                   <Droplets className="h-5 w-5 text-primary" />
                   {activeDeviceState &&
                     statusBadge(activeDeviceState.pumpStatus)}
@@ -783,6 +1073,7 @@ export default function AutomationPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-100 text-gray-400">
+                <th className="pb-4 font-semibold">Date</th>
                 <th className="pb-4 font-semibold">Time</th>
                 <th className="pb-4 font-semibold">Source</th>
                 <th className="pb-4 font-semibold">Message</th>
@@ -793,6 +1084,13 @@ export default function AutomationPage() {
               {automationLogs.length > 0 ? (
                 automationLogs.map((log, idx) => (
                   <tr key={idx} className="group">
+                    <td className="py-4 text-gray-500">
+                      {new Date(log.createdAt).toLocaleDateString([], {
+                        month: "short",
+                        day: "2-digit",
+                        year: "numeric",
+                      })}
+                    </td>
                     <td className="py-4 text-gray-500">
                       {new Date(log.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
