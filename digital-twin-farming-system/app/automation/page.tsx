@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
+import gsap from "gsap";
 import {
   Bot,
   Check,
@@ -181,6 +182,22 @@ export default function AutomationPage() {
   const endTimeDropdownRef = useRef<HTMLDivElement>(null);
   const mockTimeDropdownRef = useRef<HTMLDivElement>(null);
 
+  const saveBtnRef = useRef<HTMLButtonElement>(null);
+  const genAiBtnRef = useRef<HTMLButtonElement>(null);
+  const applyAiBtnRef = useRef<HTMLButtonElement>(null);
+  const runBtnRef = useRef<HTMLButtonElement>(null);
+
+  const animateClick = (element: HTMLElement | null) => {
+    if (!element) return;
+    gsap.to(element, {
+      scale: 0.95,
+      duration: 0.1,
+      yoyo: true,
+      repeat: 1,
+      ease: "power2.inOut",
+    });
+  };
+
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -221,7 +238,9 @@ export default function AutomationPage() {
   const [automationLogs, setAutomationLogs] = useState<AutomationEvent[]>([]);
   const [mockCurrentTime, setMockCurrentTime] = useState("12:00");
   const [statusMessage, setStatusMessage] = useState("Loading racks...");
-  const [isBusy, setIsBusy] = useState(false);
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+
+  const isBusy = activeAction !== null;
 
   async function loadLogs(trayId: string) {
     try {
@@ -285,7 +304,7 @@ export default function AutomationPage() {
   useEffect(() => {
     async function loadDashboardState(trayId: string) {
       if (!trayId) return;
-      setIsBusy(true);
+      setActiveAction("load");
       setStatusMessage("Loading tray state...");
       try {
         const response = await fetch(`/api/dashboard?trayId=${trayId}`);
@@ -306,7 +325,7 @@ export default function AutomationPage() {
           error instanceof Error ? error.message : "Unable to load automation state.";
         setStatusMessage(message);
       } finally {
-        setIsBusy(false);
+        setActiveAction(null);
       }
     }
 
@@ -346,7 +365,7 @@ export default function AutomationPage() {
 
   async function handleSaveManualSettings() {
     if (!selectedTrayId) return;
-    setIsBusy(true);
+    setActiveAction("save");
     setStatusMessage("Saving manual automation profile...");
 
     try {
@@ -371,13 +390,13 @@ export default function AutomationPage() {
         error instanceof Error ? error.message : "Unable to save manual settings.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
   async function handleGenerateAiSettings() {
     if (!selectedTrayId || !sensorReading) return;
-    setIsBusy(true);
+    setActiveAction("generate");
     setStatusMessage("Generating rule-based AI-assisted settings...");
 
     try {
@@ -394,7 +413,7 @@ export default function AutomationPage() {
         error instanceof Error ? error.message : "Unable to generate settings.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
@@ -404,7 +423,7 @@ export default function AutomationPage() {
       return;
     }
 
-    setIsBusy(true);
+    setActiveAction("apply");
     setStatusMessage("Applying AI-assisted automation profile...");
 
     try {
@@ -430,13 +449,13 @@ export default function AutomationPage() {
         error instanceof Error ? error.message : "Unable to apply AI settings.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
   async function handleRunSimulation() {
     if (!selectedTrayId) return;
-    setIsBusy(true);
+    setActiveAction("run");
     setStatusMessage("Running automation simulation...");
 
     try {
@@ -458,7 +477,7 @@ export default function AutomationPage() {
         error instanceof Error ? error.message : "Unable to run simulation.",
       );
     } finally {
-      setIsBusy(false);
+      setActiveAction(null);
     }
   }
 
@@ -723,28 +742,40 @@ export default function AutomationPage() {
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button
+              ref={saveBtnRef}
               type="button"
-              onClick={handleSaveManualSettings}
+              onClick={() => {
+                animateClick(saveBtnRef.current);
+                void handleSaveManualSettings();
+              }}
               disabled={isBusy}
-              className="inline-flex items-center gap-2 rounded-2xl bg-sidebar px-5 py-3 text-sm font-semibold text-white transition hover:bg-sidebar/90 disabled:opacity-60"
+              className={`inline-flex items-center gap-2 rounded-2xl bg-sidebar px-5 py-3 text-sm font-semibold text-white transition hover:bg-sidebar/90 ${activeAction === "save" ? "opacity-60" : ""}`}
             >
               <Save className="h-4 w-4" />
               Save Manual
             </button>
             <button
+              ref={genAiBtnRef}
               type="button"
-              onClick={handleGenerateAiSettings}
+              onClick={() => {
+                animateClick(genAiBtnRef.current);
+                void handleGenerateAiSettings();
+              }}
               disabled={isBusy}
-              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
+              className={`inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 ${activeAction === "generate" ? "opacity-60" : ""}`}
             >
               <Sparkles className="h-4 w-4" />
               Generate AI Settings
             </button>
             <button
+              ref={applyAiBtnRef}
               type="button"
-              onClick={handleApplyAiSettings}
+              onClick={() => {
+                animateClick(applyAiBtnRef.current);
+                void handleApplyAiSettings();
+              }}
               disabled={isBusy || !aiRecommendation}
-              className="inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50"
+              className={`inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10 ${activeAction === "apply" ? "opacity-50" : ""}`}
             >
               <Zap className="h-4 w-4" />
               Apply AI
@@ -826,10 +857,14 @@ export default function AutomationPage() {
                 dropdownRef={mockTimeDropdownRef}
               />
               <button
+                ref={runBtnRef}
                 type="button"
-                onClick={handleRunSimulation}
+                onClick={() => {
+                  animateClick(runBtnRef.current);
+                  void handleRunSimulation();
+                }}
                 disabled={isBusy}
-                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
+                className={`inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 ${activeAction === "run" ? "opacity-60" : ""}`}
               >
                 <Play className="h-4 w-4" />
                 Run
