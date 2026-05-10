@@ -41,7 +41,10 @@ const defaultAutomationSettings: AutomationSettings = {
   pumpDurationSeconds: 20,
 };
 
-async function postJson<TResponse>(url: string, body: unknown): Promise<TResponse> {
+async function postJson<TResponse>(
+  url: string,
+  body: unknown,
+): Promise<TResponse> {
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -70,7 +73,9 @@ function statusBadge(status: string) {
           : "bg-red-100 text-red-700 border-red-200";
 
   return (
-    <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${styles}`}>
+    <span
+      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${styles}`}
+    >
       {status}
     </span>
   );
@@ -224,7 +229,9 @@ export default function AutomationPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [dashboardState, setDashboardState] = useState<DigitalTwinState | null>(null);
+  const [dashboardState, setDashboardState] = useState<DigitalTwinState | null>(
+    null,
+  );
   const [formState, setFormState] = useState<AutomationSettings>(
     defaultAutomationSettings,
   );
@@ -232,9 +239,8 @@ export default function AutomationPage() {
     useState<AIAutomationRecommendation | null>(null);
   const [simulatedDeviceState, setSimulatedDeviceState] =
     useState<DeviceState | null>(null);
-  const [automationEvent, setAutomationEvent] = useState<AutomationEvent | null>(
-    null,
-  );
+  const [automationEvent, setAutomationEvent] =
+    useState<AutomationEvent | null>(null);
   const [automationLogs, setAutomationLogs] = useState<AutomationEvent[]>([]);
   const [mockCurrentTime, setMockCurrentTime] = useState("12:00");
   const [statusMessage, setStatusMessage] = useState("Loading racks...");
@@ -244,7 +250,9 @@ export default function AutomationPage() {
 
   async function loadLogs(trayId: string) {
     try {
-      const response = await fetch(`/api/automation/logs?trayId=${trayId}&limit=10`);
+      const response = await fetch(
+        `/api/automation/logs?trayId=${trayId}&limit=10`,
+      );
       const data = (await response.json()) as AutomationEvent[];
       if (!Array.isArray(data)) return;
       setAutomationLogs(data);
@@ -257,17 +265,20 @@ export default function AutomationPage() {
   useEffect(() => {
     async function loadRacks() {
       const response = await fetch("/api/racks");
-      const data = (await response.json()) as Rack[];
-      
-      if (!Array.isArray(data)) {
+      const payload = await response.json();
+
+      if (!Array.isArray(payload)) {
+        const message =
+          payload?.error || payload?.message || "Failed to load racks.";
         setRacks([]);
-        setStatusMessage("Invalid rack data received.");
+        setSelectedRackId("");
+        setStatusMessage(message);
         return;
       }
 
-      setRacks(data);
-      if (data.length > 0) {
-        setSelectedRackId(data[0].id);
+      setRacks(payload);
+      if (payload.length > 0) {
+        setSelectedRackId(payload[0].id);
       } else {
         setStatusMessage("No racks found.");
       }
@@ -312,7 +323,9 @@ export default function AutomationPage() {
         if ("error" in state) throw new Error(String(state.error));
 
         setDashboardState(state);
-        setFormState(state.automationSettings);
+        const nextAutomationSettings: AutomationSettings =
+          state.automationSettings ?? defaultAutomationSettings;
+        setFormState(nextAutomationSettings);
         setSimulatedDeviceState(state.deviceState);
         setAiRecommendation(null);
         setAutomationEvent(null);
@@ -322,7 +335,9 @@ export default function AutomationPage() {
         void loadLogs(trayId);
       } catch (error: unknown) {
         const message =
-          error instanceof Error ? error.message : "Unable to load automation state.";
+          error instanceof Error
+            ? error.message
+            : "Unable to load automation state.";
         setStatusMessage(message);
       } finally {
         setActiveAction(null);
@@ -369,14 +384,13 @@ export default function AutomationPage() {
     setStatusMessage("Saving manual automation profile...");
 
     try {
-      const payload = await postJson<{ automationSettings: AutomationSettings }>(
-        "/api/automation/manual",
-        {
-          ...formState,
-          trayId: selectedTrayId,
-          mode: "manual",
-        },
-      );
+      const payload = await postJson<{
+        automationSettings: AutomationSettings;
+      }>("/api/automation/manual", {
+        ...formState,
+        trayId: selectedTrayId,
+        mode: "manual",
+      });
       setFormState(payload.automationSettings);
       setDashboardState((current) =>
         current
@@ -387,7 +401,9 @@ export default function AutomationPage() {
       void loadLogs(selectedTrayId);
     } catch (error) {
       setStatusMessage(
-        error instanceof Error ? error.message : "Unable to save manual settings.",
+        error instanceof Error
+          ? error.message
+          : "Unable to save manual settings.",
       );
     } finally {
       setActiveAction(null);
@@ -427,15 +443,14 @@ export default function AutomationPage() {
     setStatusMessage("Applying AI-assisted automation profile...");
 
     try {
-      const payload = await postJson<{ automationSettings: AutomationSettings }>(
-        "/api/automation/apply-ai",
-        {
-          aiAutomationRecommendation: {
-            ...aiRecommendation,
-            trayId: selectedTrayId,
-          },
+      const payload = await postJson<{
+        automationSettings: AutomationSettings;
+      }>("/api/automation/apply-ai", {
+        aiAutomationRecommendation: {
+          ...aiRecommendation,
+          trayId: selectedTrayId,
         },
-      );
+      });
       setFormState(payload.automationSettings);
       setDashboardState((current) =>
         current
@@ -485,7 +500,9 @@ export default function AutomationPage() {
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Automation Control</h1>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Automation Control
+          </h1>
           <p className="text-gray-500">
             Set schedules and rules for specific racks and trays
           </p>
@@ -796,13 +813,16 @@ export default function AutomationPage() {
             <div className="space-y-4">
               <div className="rounded-2xl bg-white/10 p-4">
                 <div className="text-sm opacity-70">Crop</div>
-                <div className="text-2xl font-bold">{aiRecommendation.cropName}</div>
+                <div className="text-2xl font-bold">
+                  {aiRecommendation.cropName}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-2xl bg-white/10 p-3">
                   <div className="opacity-70">LED</div>
                   <div className="font-semibold">
-                    {aiRecommendation.ledStartTime} - {aiRecommendation.ledEndTime}
+                    {aiRecommendation.ledStartTime} -{" "}
+                    {aiRecommendation.ledEndTime}
                   </div>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-3">
@@ -831,7 +851,8 @@ export default function AutomationPage() {
             </div>
           ) : (
             <div className="rounded-2xl bg-white/10 p-4 text-sm opacity-80">
-              Generate settings to preview the applied LED, fan, and pump profile.
+              Generate settings to preview the applied LED, fan, and pump
+              profile.
             </div>
           )}
         </section>
@@ -935,9 +956,12 @@ export default function AutomationPage() {
             <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-sm text-gray-700 flex items-center justify-between">
               <span>{automationEvent.message}</span>
               <div className="flex gap-2">
-                {automationEvent.ledStatus && statusBadge(automationEvent.ledStatus)}
-                {automationEvent.fanStatus && statusBadge(automationEvent.fanStatus)}
-                {automationEvent.pumpStatus && statusBadge(automationEvent.pumpStatus)}
+                {automationEvent.ledStatus &&
+                  statusBadge(automationEvent.ledStatus)}
+                {automationEvent.fanStatus &&
+                  statusBadge(automationEvent.fanStatus)}
+                {automationEvent.pumpStatus &&
+                  statusBadge(automationEvent.pumpStatus)}
               </div>
             </div>
           )}
@@ -980,7 +1004,9 @@ export default function AutomationPage() {
             )}
           </div>
 
-          <div className={`mt-5 rounded-2xl bg-sidebar p-4 text-sidebar-foreground ${isBusy ? "animate-pulse" : ""}`}>
+          <div
+            className={`mt-5 rounded-2xl bg-sidebar p-4 text-sidebar-foreground ${isBusy ? "animate-pulse" : ""}`}
+          >
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <Thermometer className="h-4 w-4 text-primary" />
               Latest Sensor
@@ -1042,13 +1068,15 @@ export default function AutomationPage() {
                       })}
                     </td>
                     <td className="py-4">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        log.triggeredBy === "ai" 
-                          ? "bg-purple-100 text-purple-700" 
-                          : log.triggeredBy === "simulation"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
-                      }`}>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          log.triggeredBy === "ai"
+                            ? "bg-purple-100 text-purple-700"
+                            : log.triggeredBy === "simulation"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
                         {log.triggeredBy.toUpperCase()}
                       </span>
                     </td>
@@ -1056,13 +1084,22 @@ export default function AutomationPage() {
                     <td className="py-4">
                       <div className="flex gap-1.5">
                         {log.ledStatus && (
-                          <span className={`h-2 w-2 rounded-full ${log.ledStatus === "on" ? "bg-green-500" : "bg-gray-300"}`} title={`LED: ${log.ledStatus}`} />
+                          <span
+                            className={`h-2 w-2 rounded-full ${log.ledStatus === "on" ? "bg-green-500" : "bg-gray-300"}`}
+                            title={`LED: ${log.ledStatus}`}
+                          />
                         )}
                         {log.fanStatus && (
-                          <span className={`h-2 w-2 rounded-full ${log.fanStatus === "on" ? "bg-green-500" : "bg-gray-300"}`} title={`Fan: ${log.fanStatus}`} />
+                          <span
+                            className={`h-2 w-2 rounded-full ${log.fanStatus === "on" ? "bg-green-500" : "bg-gray-300"}`}
+                            title={`Fan: ${log.fanStatus}`}
+                          />
                         )}
                         {log.pumpStatus && (
-                          <span className={`h-2 w-2 rounded-full ${log.pumpStatus === "on" ? "bg-green-500" : "bg-gray-300"}`} title={`Pump: ${log.pumpStatus}`} />
+                          <span
+                            className={`h-2 w-2 rounded-full ${log.pumpStatus === "on" ? "bg-green-500" : "bg-gray-300"}`}
+                            title={`Pump: ${log.pumpStatus}`}
+                          />
                         )}
                       </div>
                     </td>

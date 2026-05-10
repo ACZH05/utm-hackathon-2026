@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
   Box,
-  Settings,
   Leaf,
   Bot
 } from "lucide-react"
@@ -15,7 +14,6 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Automation", href: "/automation", icon: Bot },
   { name: "Digital Twin", href: "/digital-twin", icon: Box },
-  { name: "Settings", href: "/settings", icon: Settings },
 ]
 
 export default function Sidebar() {
