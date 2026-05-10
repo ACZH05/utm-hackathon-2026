@@ -1,7 +1,6 @@
 "use client";
 
-<<<<<<< HEAD
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -17,27 +16,19 @@ import {
   Cell,
 } from "recharts";
 import {
-  Leaf,
-  Droplet,
-  Zap,
   AlertTriangle,
   CheckCircle2,
-  TrendingUp,
-  Sparkles,
-  LayoutGrid,
+  ChevronDown,
+  Droplet,
   Layers,
+  LayoutGrid,
+  Leaf,
+  Sparkles,
+  TrendingUp,
+  Zap,
+  Check,
 } from "lucide-react";
 import type { DigitalTwinState, SensorReading, Rack, Tray } from "@/lib/types";
-=======
-import { useEffect, useState, useRef } from 'react'
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area,
-  PieChart, Pie, Cell
-} from 'recharts'
-import { AlertTriangle, CheckCircle2, ChevronDown, Droplet, Layers, LayoutGrid, Leaf, Sparkles, TrendingUp, Zap, Check } from 'lucide-react'
-import type { DigitalTwinState, SensorReading, Rack, Tray } from '@/lib/types'
->>>>>>> b2d17dc22096869ec6baf5b3ccb50bd3d1e18f00
 
 // Mock Data for fields not in DB yet
 const weeklyConsumption = [
@@ -79,10 +70,16 @@ export default function Dashboard() {
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (rackDropdownRef.current && !rackDropdownRef.current.contains(event.target as Node)) {
+      if (
+        rackDropdownRef.current &&
+        !rackDropdownRef.current.contains(event.target as Node)
+      ) {
         setIsRackOpen(false);
       }
-      if (trayDropdownRef.current && !trayDropdownRef.current.contains(event.target as Node)) {
+      if (
+        trayDropdownRef.current &&
+        !trayDropdownRef.current.contains(event.target as Node)
+      ) {
         setIsTrayOpen(false);
       }
     }
@@ -159,45 +156,6 @@ export default function Dashboard() {
     humidity: h.humidity,
   }));
 
-<<<<<<< HEAD
-  if (isLoading && !dashboardState) {
-    return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              Farming Dashboard
-            </h1>
-            <p className="text-gray-500">
-              Overview of your vertical farm operations
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full skeleton" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="h-19 rounded-2xl skeleton" />
-          <div className="h-19 rounded-2xl skeleton" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-35 rounded-3xl skeleton" />
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-87.5 rounded-3xl skeleton" />
-          <div className="h-87.5 rounded-3xl skeleton" />
-        </div>
-      </div>
-    );
-  }
-
-=======
->>>>>>> b2d17dc22096869ec6baf5b3ccb50bd3d1e18f00
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between mb-8">
@@ -210,23 +168,17 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-<<<<<<< HEAD
-          <svg
-            className="w-12 h-12 text-primary"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" />
-          </svg>
-=======
-           {isLoading && !dashboardState ? (
-             <div className="w-12 h-12 rounded-full skeleton" />
-           ) : (
-             <svg className="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" />
-             </svg>
-           )}
->>>>>>> b2d17dc22096869ec6baf5b3ccb50bd3d1e18f00
+          {isLoading && !dashboardState ? (
+            <div className="w-12 h-12 rounded-full skeleton" />
+          ) : (
+            <svg
+              className="w-12 h-12 text-primary"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" />
+            </svg>
+          )}
         </div>
       </div>
 
@@ -245,13 +197,18 @@ export default function Dashboard() {
                 type="button"
                 onClick={() => setIsRackOpen(!isRackOpen)}
                 className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 ${
-                  isRackOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+                  isRackOpen
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
                 }`}
               >
                 <span className="truncate">
-                  {racks.find((r) => r.id === selectedRackId)?.name || "Select Rack"}
+                  {racks.find((r) => r.id === selectedRackId)?.name ||
+                    "Select Rack"}
                 </span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isRackOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`h-4 w-4 text-gray-400 transition-transform ${isRackOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {isRackOpen && (
@@ -273,7 +230,9 @@ export default function Dashboard() {
                           }`}
                         >
                           <span className="truncate">{rack.name}</span>
-                          {isSelected && <Check className="h-4 w-4 text-primary" />}
+                          {isSelected && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
                         </div>
                       );
                     })}
@@ -295,16 +254,23 @@ export default function Dashboard() {
             <div className="relative" ref={trayDropdownRef}>
               <button
                 type="button"
-                onClick={() => !trays.length ? null : setIsTrayOpen(!isTrayOpen)}
+                onClick={() =>
+                  !trays.length ? null : setIsTrayOpen(!isTrayOpen)
+                }
                 disabled={trays.length === 0}
                 className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 disabled:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed ${
-                  isTrayOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+                  isTrayOpen
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
                 }`}
               >
                 <span className="truncate">
-                  {trays.find((t) => t.id === selectedTrayId)?.name || "Select Tray"}
+                  {trays.find((t) => t.id === selectedTrayId)?.name ||
+                    "Select Tray"}
                 </span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isTrayOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`h-4 w-4 text-gray-400 transition-transform ${isTrayOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {isTrayOpen && trays.length > 0 && (
@@ -326,7 +292,9 @@ export default function Dashboard() {
                           }`}
                         >
                           <span className="truncate">{tray.name}</span>
-                          {isSelected && <Check className="h-4 w-4 text-primary" />}
+                          {isSelected && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
                         </div>
                       );
                     })}
@@ -394,72 +362,6 @@ export default function Dashboard() {
             Alerts & Recommendations
           </h3>
           <div className="space-y-4">
-<<<<<<< HEAD
-            {alerts.length > 0 ? (
-              alerts.map((alert, index) => (
-                <div
-                  key={index}
-                  className={`flex items-start gap-4 p-4 border rounded-2xl ${
-                    alert.severity === "critical"
-                      ? "border-red-100 bg-red-50"
-                      : "border-amber-100 bg-amber-50"
-                  }`}
-                >
-                  <div
-                    className={`p-2 rounded-full ${
-                      alert.severity === "critical"
-                        ? "bg-red-100 text-red-600"
-                        : "bg-amber-100 text-amber-600"
-                    }`}
-                  >
-                    <AlertTriangle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4
-                      className={`font-semibold ${alert.severity === "critical" ? "text-red-800" : "text-amber-800"}`}
-                    >
-                      {alert.type.toUpperCase()} Alert
-                    </h4>
-                    <p
-                      className={`text-sm ${alert.severity === "critical" ? "text-red-600" : "text-amber-600"} mb-2`}
-                    >
-                      {alert.message}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="flex items-start gap-4 p-4 border border-green-100 bg-green-50 rounded-2xl">
-                <div className="bg-green-100 p-2 rounded-full text-green-600">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-800">
-                    System Stable
-                  </h4>
-                  <p className="text-sm text-green-600">
-                    All sensors report values within safe operating ranges.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {recommendation && (
-              <div className="flex items-start gap-4 p-4 border border-primary/20 bg-primary/5 rounded-2xl">
-                <div className="bg-primary/10 p-2 rounded-full text-primary">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800">
-                    {recommendation.title}
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {recommendation.message}
-                  </p>
-                  <div className="inline-flex items-center gap-1 text-xs font-medium bg-white px-3 py-1 rounded-full border border-primary/20 text-primary">
-                    <Zap className="w-3 h-3" /> Suggested:{" "}
-                    {recommendation.suggestedAction}
-=======
             {isLoading && !dashboardState ? (
               <div className="space-y-4">
                 <div className="h-24 rounded-2xl skeleton" />
@@ -469,22 +371,43 @@ export default function Dashboard() {
               <>
                 {alerts.length > 0 ? (
                   alerts.map((alert, index) => (
-                    <div key={index} className={`flex items-start gap-4 p-4 border rounded-2xl ${
-                      alert.severity === 'critical' ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'
-                    }`}>
+                    <div
+                      key={index}
+                      className={`flex items-start gap-4 p-4 border rounded-2xl ${
+                        alert.severity === "critical"
+                          ? "border-red-100 bg-red-50"
+                          : "border-amber-100 bg-amber-50"
+                      }`}
+                    >
                       <div className="relative">
-                        <div className={`absolute inset-0 rounded-full animate-ping blur-sm opacity-60 ${
-                          alert.severity === 'critical' ? 'bg-red-400' : 'bg-amber-400'
-                        }`} />
-                        <div className={`relative p-2 rounded-full z-10 animate-pulse ${
-                          alert.severity === 'critical' ? 'bg-red-100 text-red-600 shadow-[0_0_25px_rgba(239,68,68,0.6)]' : 'bg-amber-100 text-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.6)]'
-                        }`}>
+                        <div
+                          className={`absolute inset-0 rounded-full animate-ping blur-sm opacity-60 ${
+                            alert.severity === "critical"
+                              ? "bg-red-400"
+                              : "bg-amber-400"
+                          }`}
+                        />
+                        <div
+                          className={`relative p-2 rounded-full z-10 animate-pulse ${
+                            alert.severity === "critical"
+                              ? "bg-red-100 text-red-600 shadow-[0_0_25px_rgba(239,68,68,0.6)]"
+                              : "bg-amber-100 text-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.6)]"
+                          }`}
+                        >
                           <AlertTriangle className="w-5 h-5" />
                         </div>
                       </div>
                       <div>
-                        <h4 className={`font-semibold ${alert.severity === 'critical' ? 'text-red-800' : 'text-amber-800'}`}>{alert.type.toUpperCase()} Alert</h4>
-                        <p className={`text-sm ${alert.severity === 'critical' ? 'text-red-600' : 'text-amber-600'} mb-2`}>{alert.message}</p>
+                        <h4
+                          className={`font-semibold ${alert.severity === "critical" ? "text-red-800" : "text-amber-800"}`}
+                        >
+                          {alert.type.toUpperCase()} Alert
+                        </h4>
+                        <p
+                          className={`text-sm ${alert.severity === "critical" ? "text-red-600" : "text-amber-600"} mb-2`}
+                        >
+                          {alert.message}
+                        </p>
                       </div>
                     </div>
                   ))
@@ -494,23 +417,31 @@ export default function Dashboard() {
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-green-800">System Stable</h4>
-                      <p className="text-sm text-green-600">All sensors report values within safe operating ranges.</p>
+                      <h4 className="font-semibold text-green-800">
+                        System Stable
+                      </h4>
+                      <p className="text-sm text-green-600">
+                        All sensors report values within safe operating ranges.
+                      </p>
                     </div>
->>>>>>> b2d17dc22096869ec6baf5b3ccb50bd3d1e18f00
                   </div>
                 )}
-                
+
                 {recommendation && (
                   <div className="flex items-start gap-4 p-4 border border-primary/20 bg-primary/5 rounded-2xl">
                     <div className="bg-primary/10 p-2 rounded-full text-primary">
                       <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-800">{recommendation.title}</h4>
-                      <p className="text-sm text-gray-600 mb-2">{recommendation.message}</p>
+                      <h4 className="font-semibold text-gray-800">
+                        {recommendation.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {recommendation.message}
+                      </p>
                       <div className="inline-flex items-center gap-1 text-xs font-medium bg-white px-3 py-1 rounded-full border border-primary/20 text-primary">
-                        <Zap className="w-3 h-3" /> Suggested: {recommendation.suggestedAction}
+                        <Zap className="w-3 h-3" /> Suggested:{" "}
+                        {recommendation.suggestedAction}
                       </div>
                     </div>
                   </div>
@@ -575,15 +506,10 @@ export default function Dashboard() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-card rounded-3xl p-6 shadow-sm">
-<<<<<<< HEAD
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Crop Distribution
           </h3>
-          <div className="h-64 flex items-center justify-center relative">
-=======
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Crop Distribution</h3>
           <div className="h-52 flex items-center justify-center relative">
->>>>>>> b2d17dc22096869ec6baf5b3ccb50bd3d1e18f00
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -621,14 +547,21 @@ export default function Dashboard() {
             {cropDistribution.map((crop, index) => {
               const percentage = Math.round((crop.value / 1200) * 100);
               return (
-                <div key={crop.name} className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
-                    style={{ backgroundColor: COLORS[index % COLORS.length] }} 
+                <div
+                  key={crop.name}
+                  className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   />
                   <div className="flex flex-col">
-                    <span className="text-xs font-medium text-gray-700 leading-tight">{crop.name}</span>
-                    <span className="text-[10px] text-gray-500 leading-tight">{percentage}% ({crop.value})</span>
+                    <span className="text-xs font-medium text-gray-700 leading-tight">
+                      {crop.name}
+                    </span>
+                    <span className="text-[10px] text-gray-500 leading-tight">
+                      {percentage}% ({crop.value})
+                    </span>
                   </div>
                 </div>
               );
@@ -641,89 +574,66 @@ export default function Dashboard() {
             Historical Sensor Trends
           </h3>
           <div className="h-64">
-<<<<<<< HEAD
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={chartData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#C49646" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#C49646" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorHum" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3D5654" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3D5654" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#eee"
-                />
-                <XAxis
-                  dataKey="time"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#888", fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#888", fontSize: 12 }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "none",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="temp"
-                  stroke="#C49646"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorTemp)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="humidity"
-                  stroke="#3D5654"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorHum)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-=======
             {isLoading && history.length === 0 ? (
               <div className="w-full h-full rounded-2xl skeleton" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
                   <defs>
                     <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C49646" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#C49646" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#C49646" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#C49646" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="colorHum" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3D5654" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3D5654" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3D5654" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3D5654" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                  <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
-                  <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                  <Area type="monotone" dataKey="temp" stroke="#C49646" strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" />
-                  <Area type="monotone" dataKey="humidity" stroke="#3D5654" strokeWidth={3} fillOpacity={1} fill="url(#colorHum)" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#eee"
+                  />
+                  <XAxis
+                    dataKey="time"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#888", fontSize: 12 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#888", fontSize: 12 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "none",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="temp"
+                    stroke="#C49646"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorTemp)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="humidity"
+                    stroke="#3D5654"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorHum)"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             )}
->>>>>>> b2d17dc22096869ec6baf5b3ccb50bd3d1e18f00
           </div>
         </div>
       </div>
