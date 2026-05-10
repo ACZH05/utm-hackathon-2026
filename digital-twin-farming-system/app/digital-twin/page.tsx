@@ -10,6 +10,8 @@ import {
   Lightbulb,
   AlertTriangle,
   Leaf,
+  Wrench,
+  CheckCircle2,
 } from "lucide-react";
 import {
   DigitalTwinState,
@@ -43,7 +45,7 @@ const defaultRec: Recommendation = {
 };
 
 const mockPlantProfile: PlantProfile = {
-  id: "lettuce-001",
+  id: "lettuce-01",
   cropName: "Butterhead Lettuce",
   safeTemperatureRange: [18, 24],
   safeHumidityRange: [50, 70],
@@ -63,12 +65,12 @@ const defaultDeviceState: DeviceState = {
 const defaultAutomationSettings: AutomationSettings = {
   trayId: "overall",
   mode: "manual",
-  ledStartTime: "07:00",
-  ledEndTime: "19:00",
+  ledStartTime: "06:00",
+  ledEndTime: "18:00",
   ledSpectrum: "mixed",
-  fanTriggerTemperature: 24,
+  fanTriggerTemperature: 25,
   pumpIntervalMinutes: 30,
-  pumpDurationSeconds: 90,
+  pumpDurationSeconds: 20,
 };
 
 const createMockState = (
@@ -90,6 +92,24 @@ const createMockState = (
   ...overrides,
 });
 
+const generateRackData = (rackId: string) => ({
+  [`rack_${rackId}`]: createMockState(),
+  [`plants_${rackId}_A`]: createMockState(),
+  [`led_${rackId}_A`]: createMockState(),
+  [`plants_${rackId}_B`]: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "warning" },
+  }),
+  [`led_${rackId}_B`]: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "warning" },
+  }),
+  [`plants_${rackId}_C`]: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "off" },
+  }),
+  [`led_${rackId}_C`]: createMockState({
+    deviceState: { ...defaultDeviceState, ledStatus: "off" },
+  }),
+});
+
 const initialFarmData: Record<string, DigitalTwinState> = {
   overall: createMockState({
     alerts: [
@@ -105,29 +125,36 @@ const initialFarmData: Record<string, DigitalTwinState> = {
       trayId: "overall",
       title: "Maintenance Required",
       message: "Main pump is showing critical flow resistance.",
-      suggestedAction: "Inspect check valve",
+      suggestedAction: "Run automated backflush routine to clear valve.",
       severity: "critical",
       confidence: 0.92,
     },
   }),
-  rack: createMockState(),
   pump: createMockState(),
   fan: createMockState(),
   reservoir: createMockState(),
-  plants_A: createMockState(),
-  led_A: createMockState(),
-  plants_B: createMockState({
-    deviceState: { ...defaultDeviceState, ledStatus: "warning" },
+  robot_main: createMockState({
+    sensorReading: {
+      trayId: "robot_main",
+      temperature: 30,
+      humidity: 40,
+      soilMoisture: 0,
+      waterPh: 0,
+      waterLevel: 0,
+      createdAt: new Date().toISOString(),
+    },
+    recommendation: {
+      trayId: "robot_main",
+      title: "Mobile Unit: Ready",
+      message: "All navigation and maintenance sub-systems are healthy.",
+      suggestedAction: "Awaiting task assignment.",
+      severity: "info",
+      confidence: 0.99,
+    },
   }),
-  led_B: createMockState({
-    deviceState: { ...defaultDeviceState, ledStatus: "warning" },
-  }),
-  plants_C: createMockState({
-    deviceState: { ...defaultDeviceState, ledStatus: "off" },
-  }),
-  led_C: createMockState({
-    deviceState: { ...defaultDeviceState, ledStatus: "off" },
-  }),
+  ...generateRackData("north"),
+  ...generateRackData("main"),
+  ...generateRackData("south"),
 };
 
 export default function DigitalTwin() {
@@ -143,7 +170,6 @@ export default function DigitalTwin() {
       const newState = { ...prev };
       const currentStatus = newState["overall"].deviceState[device];
       const nextStatus: DeviceStatus = currentStatus === "on" ? "off" : "on";
-
       Object.keys(newState).forEach((key) => {
         newState[key] = {
           ...newState[key],
@@ -162,8 +188,55 @@ export default function DigitalTwin() {
         currentLed === "on" ? "off" : currentLed === "off" ? "warning" : "on";
 
       if (
+        selected &&
+        selected.type === "rack" &&
+        selected.name === "rack_north"
+      ) {
+        newState["led_north_A"] = {
+          ...newState["led_north_A"],
+          deviceState: {
+            ...newState["led_north_A"].deviceState,
+            ledStatus: nextLed,
+          },
+        };
+        newState["plants_north_A"] = {
+          ...newState["plants_north_A"],
+          deviceState: {
+            ...newState["plants_north_A"].deviceState,
+            ledStatus: nextLed,
+          },
+        };
+        newState["led_north_B"] = {
+          ...newState["led_north_B"],
+          deviceState: {
+            ...newState["led_north_B"].deviceState,
+            ledStatus: nextLed,
+          },
+        };
+        newState["plants_north_B"] = {
+          ...newState["plants_north_B"],
+          deviceState: {
+            ...newState["plants_north_B"].deviceState,
+            ledStatus: nextLed,
+          },
+        };
+        newState["led_north_C"] = {
+          ...newState["led_north_C"],
+          deviceState: {
+            ...newState["led_north_C"].deviceState,
+            ledStatus: nextLed,
+          },
+        };
+        newState["plants_north_C"] = {
+          ...newState["plants_north_C"],
+          deviceState: {
+            ...newState["plants_north_C"].deviceState,
+            ledStatus: nextLed,
+          },
+        };
+      } else if (
         !selected ||
-        ["rack", "pump", "fan", "reservoir"].includes(selected.type)
+        ["pump", "fan", "reservoir", "robot_main"].includes(selected.type)
       ) {
         Object.keys(newState).forEach((key) => {
           newState[key] = {
@@ -171,23 +244,35 @@ export default function DigitalTwin() {
             deviceState: { ...newState[key].deviceState, ledStatus: nextLed },
           };
         });
+      } else if (selected.type === "rack") {
+        const targetRack = activeKey.split("_")[1];
+        Object.keys(newState).forEach((key) => {
+          if (key.includes(`_${targetRack}`)) {
+            newState[key] = {
+              ...newState[key],
+              deviceState: { ...newState[key].deviceState, ledStatus: nextLed },
+            };
+          }
+        });
       } else {
-        const zone = activeKey.split("_")[1];
-        if (zone) {
-          if (newState[`led_${zone}`]) {
-            newState[`led_${zone}`] = {
-              ...newState[`led_${zone}`],
+        const parts = activeKey.split("_");
+        const targetRack = parts[1];
+        const zone = parts[2];
+        if (targetRack && zone) {
+          if (newState[`led_${targetRack}_${zone}`]) {
+            newState[`led_${targetRack}_${zone}`] = {
+              ...newState[`led_${targetRack}_${zone}`],
               deviceState: {
-                ...newState[`led_${zone}`].deviceState,
+                ...newState[`led_${targetRack}_${zone}`].deviceState,
                 ledStatus: nextLed,
               },
             };
           }
-          if (newState[`plants_${zone}`]) {
-            newState[`plants_${zone}`] = {
-              ...newState[`plants_${zone}`],
+          if (newState[`plants_${targetRack}_${zone}`]) {
+            newState[`plants_${targetRack}_${zone}`] = {
+              ...newState[`plants_${targetRack}_${zone}`],
               deviceState: {
-                ...newState[`plants_${zone}`].deviceState,
+                ...newState[`plants_${targetRack}_${zone}`].deviceState,
                 ledStatus: nextLed,
               },
             };
@@ -198,7 +283,24 @@ export default function DigitalTwin() {
     });
   };
 
-  const showAllControls = !selected || selected.name === "rack";
+  // --- THE ONE-CLICK AUTO FIX FUNCTION ---
+  const applyAutoFix = () => {
+    setZonesData((prev) => {
+      const newState = { ...prev };
+      Object.keys(newState).forEach((key) => {
+        newState[key] = {
+          ...newState[key],
+          deviceState: { ...newState[key].deviceState, pumpStatus: "normal" }, // Fixes the pump
+          alerts: [], // Clears active hardware alerts
+          recommendation: defaultRec, // Returns the system to nominal info state
+        };
+      });
+      return newState;
+    });
+  };
+
+  const showAllControls =
+    !selected || selected.type === "rack" || selected.name === "overall";
   const showLed =
     showAllControls || selected?.type === "led" || selected?.type === "plant";
   const showFan = showAllControls || selected?.type === "fan";
@@ -208,7 +310,7 @@ export default function DigitalTwin() {
     selected?.type === "reservoir";
 
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-4rem)] flex flex-col">
+    <div className="max-w-7xl mx-auto h-[calc(100vh-4rem)] flex flex-col p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="min-w-0 pr-4">
           <h1 className="text-3xl font-bold text-gray-900 truncate">
@@ -221,14 +323,13 @@ export default function DigitalTwin() {
       </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
-        {/* 3D VIEWPORT */}
         <div className="lg:col-span-3 bg-slate-50 rounded-3xl shadow-inner border border-gray-200 overflow-hidden relative flex flex-col min-h-[50vh] lg:min-h-0">
           <DynamicFarmScene onSelectPart={setSelected} zonesData={zonesData} />
 
           <div className="absolute top-6 left-6 pointer-events-none max-w-[80%]">
             <div className="bg-white/90 backdrop-blur px-4 py-1.5 rounded-full text-xs font-bold text-green-700 shadow-sm border border-green-200 uppercase tracking-wide truncate">
               {selected
-                ? `${selected.type.toUpperCase()}: ${selected.name.replace("_", " ")}`
+                ? `${selected.type.toUpperCase()}: ${selected.name.split("_").join(" ")}`
                 : "OVERALL FARM"}
             </div>
           </div>
@@ -247,17 +348,20 @@ export default function DigitalTwin() {
           </div>
         </div>
 
-        {/* SIDE PANELS */}
         <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-2">
           {/* SENSOR PANEL */}
           <div className="bg-slate-800 text-white rounded-3xl p-6 shadow-xl shrink-0 border border-slate-700">
             <h3 className="text-lg font-semibold mb-5 text-slate-100 flex items-center justify-between">
-              Sensor Data
-              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded">Live</span>
+              Sensor Data{" "}
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded">
+                Live
+              </span>
             </h3>
             <div className="space-y-4">
               <DataRow
-                icon={<Thermometer className="w-4 h-4 shrink-0 text-orange-400" />}
+                icon={
+                  <Thermometer className="w-4 h-4 shrink-0 text-orange-400" />
+                }
                 label="Temperature"
                 value={`${currentData.sensorReading.temperature}°C`}
               />
@@ -267,7 +371,9 @@ export default function DigitalTwin() {
                 value={`${currentData.sensorReading.humidity}%`}
               />
               <DataRow
-                icon={<Activity className="w-4 h-4 shrink-0 text-emerald-400" />}
+                icon={
+                  <Activity className="w-4 h-4 shrink-0 text-emerald-400" />
+                }
                 label="Soil Moisture"
                 value={`${currentData.sensorReading.soilMoisture}%`}
               />
@@ -283,17 +389,17 @@ export default function DigitalTwin() {
               </div>
               <div className="space-y-2 text-xs font-medium text-emerald-900/70">
                 <div className="flex justify-between">
-                  <span>Safe Temp:</span>{" "}
+                  <span>Safe Temp:</span>
                   <span>
                     {mockPlantProfile.safeTemperatureRange.join(" - ")}°C
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Safe Humidity:</span>{" "}
+                  <span>Safe Humidity:</span>
                   <span>{mockPlantProfile.safeHumidityRange.join(" - ")}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Target pH:</span>{" "}
+                  <span>Target pH:</span>
                   <span>{mockPlantProfile.safeWaterPhRange.join(" - ")}</span>
                 </div>
               </div>
@@ -336,10 +442,10 @@ export default function DigitalTwin() {
             </div>
           </div>
 
-          {/* ALERTS & RECOMMENDATIONS */}
+          {/* ALERTS & RECOMMENDATIONS WITH EXPECTED IMPACT AND ONE-CLICK FIX */}
           {currentData.recommendation &&
             currentData.recommendation.severity !== "info" && (
-              <div className="bg-red-50 border border-red-200 rounded-3xl p-6 shadow-xl shrink-0">
+              <div className="bg-red-50 border border-red-200 rounded-3xl p-6 shadow-xl shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center gap-2 mb-2 text-red-600 font-bold">
                   <AlertTriangle className="w-5 h-5" />
                   <h3>{currentData.recommendation.title}</h3>
@@ -347,12 +453,33 @@ export default function DigitalTwin() {
                 <p className="text-sm text-red-800 mb-3">
                   {currentData.recommendation.message}
                 </p>
-                <div className="bg-white rounded-xl p-3 border border-red-100 text-sm font-medium text-gray-700">
+
+                <div className="bg-white rounded-xl p-3 border border-red-100 text-sm font-medium text-gray-700 mb-4">
                   <span className="text-red-500 font-bold block text-xs uppercase mb-1">
                     Suggested Action
                   </span>
                   {currentData.recommendation.suggestedAction}
+
+                  {/* --- EXPECTED IMPROVEMENT SECTION --- */}
+                  <div className="mt-3 pt-3 border-t border-red-50">
+                    <span className="text-emerald-600 font-bold block text-xs uppercase mb-1 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Expected Impact
+                    </span>
+                    <span className="text-gray-600 text-xs">
+                      Restores optimal nutrient flow rate (98% efficiency) and
+                      prevents immediate crop dehydration across all active
+                      tiers.
+                    </span>
+                  </div>
                 </div>
+
+                {/* --- THE ONE-CLICK FIX BUTTON --- */}
+                <button
+                  onClick={applyAutoFix}
+                  className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-md shadow-red-600/20"
+                >
+                  <Wrench className="w-4 h-4" /> Apply Auto-Fix
+                </button>
               </div>
             )}
         </div>
@@ -441,31 +568,33 @@ function StatusCard({
         className="absolute inset-0 z-20 w-full h-full cursor-pointer focus:outline-none"
         aria-label={`Toggle ${title}`}
       />
-      
-      <div className={`relative z-10 p-3 flex items-center justify-between gap-3 border ${currentStyle.bg} transition-colors duration-300`}>
+      <div
+        className={`relative z-10 p-3 flex items-center justify-between gap-3 border ${currentStyle.bg} transition-colors duration-300`}
+      >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={`p-1.5 rounded-lg shrink-0 border ${currentStyle.icon}`}>
-            {/* Small icon size wrapper */}
-            <div className="scale-90">
-              {icon}
-            </div>
+          <div
+            className={`p-1.5 rounded-lg shrink-0 border ${currentStyle.icon}`}
+          >
+            <div className="scale-90">{icon}</div>
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-white leading-tight">
               {title}
             </div>
-            <div className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 leading-none ${currentStyle.text}`}>
+            <div
+              className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 leading-none ${currentStyle.text}`}
+            >
               {subtitle}
             </div>
           </div>
         </div>
-        
-        <div className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border shrink-0 ${currentStyle.statusBg}`}>
+        <div
+          className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border shrink-0 ${currentStyle.statusBg}`}
+        >
           {status}
         </div>
       </div>
-      
-      <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-tr from-white/5 via-transparent to-white/5" />
+      <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-linear-to-tr from-white/5 via-transparent to-white/5" />
     </div>
   );
 }

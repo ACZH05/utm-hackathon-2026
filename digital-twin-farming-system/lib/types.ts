@@ -51,6 +51,7 @@ export interface Recommendation {
   suggestedAction: string;
   severity: AlertSeverity;
   confidence: number;
+  impact?: string;
 }
 
 export interface PlantProfile {
@@ -96,7 +97,7 @@ export interface AutomationEvent {
   createdAt: string;
 }
 export interface SelectedComponent {
-  type: "plant" | "led" | "fan" | "pump" | "reservoir";
+  type: "plant" | "led" | "fan" | "pump" | "reservoir" | "rack";
   name: string;
 }
 

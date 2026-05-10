@@ -9,10 +9,11 @@ import {
   ContactShadows,
   Bounds,
   useBounds,
+  Sky, // <-- Imported Sky
 } from "@react-three/drei";
 import * as THREE from "three";
 import { ProceduralFarm } from "./ProceduralFarm";
-import { DigitalTwinState, SelectedComponent } from "@/lib/types"; // IMPORT TYPE
+import { DigitalTwinState, SelectedComponent } from "@/lib/types";
 
 function WebGLCleanup() {
   const { gl } = useThree();
@@ -64,16 +65,36 @@ export default function FarmScene({
     <Canvas
       camera={{ position: [6, 5, 7], fov: 45 }}
       shadows
-      gl={{ antialias: true, alpha: true }}
+      // Removed alpha: true so the background renders solidly
+      gl={{ antialias: true }}
       onCreated={({ gl }) => {
         gl.shadowMap.type = THREE.PCFShadowMap;
       }}
     >
       <WebGLCleanup />
-      <ambientLight intensity={0.5} />
+
+      {/* --- OUTDOOR FARM ENVIRONMENT --- */}
+      {/* 1. Dynamic Outdoor Sky */}
+      <Sky sunPosition={[10, 20, 5]} turbidity={0.3} rayleigh={0.5} />
+
+      {/* 2. Atmospheric Fog (Blends the harsh horizon line into the sky) */}
+      <fog attach="fog" args={["#e0f2fe", 15, 35]} />
+
+      {/* 3. Infinite Grassy Floor */}
+      <mesh
+        position={[0, -2.01, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[150, 150]} />
+        <meshStandardMaterial color="#166534" roughness={1} />
+      </mesh>
+      {/* -------------------------------- */}
+
+      <ambientLight intensity={0.6} />
       <directionalLight
         position={[10, 10, 5]}
-        intensity={1.2}
+        intensity={1.5}
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
@@ -84,19 +105,24 @@ export default function FarmScene({
         </SelectToZoom>
       </Bounds>
 
+      {/* Keeps the realistic lighting reflections on the metal framing */}
       <Environment preset="warehouse" />
+
       <ContactShadows
         position={[0, -2.0, 0]}
-        opacity={0.6}
-        scale={15}
-        blur={2.5}
+        opacity={0.8}
+        scale={25}
+        blur={1.5}
+        color="#000000"
       />
+
+      {/* maxPolarAngle restricted to Math.PI / 2.1 to keep the camera above ground */}
       <OrbitControls
         makeDefault
         minPolarAngle={0}
-        maxPolarAngle={Math.PI / 1.6}
+        maxPolarAngle={Math.PI / 2.1}
         minDistance={3}
-        maxDistance={15}
+        maxDistance={25}
         enableDamping
       />
     </Canvas>
