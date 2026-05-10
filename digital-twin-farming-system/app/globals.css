@@ -25,15 +25,125 @@
   --font-mono: var(--font-geist-mono);
 
   --animate-shimmer: shimmer 2s infinite linear;
+  --animate-text-flow: text-flow 3s ease infinite;
+}
 
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
+@keyframes soft-pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(196, 150, 70, 0.8));
   }
+  50% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 4px rgba(196, 150, 70, 0.2));
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes text-flow {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes text-flow {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+
+@keyframes ray-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: translate(-50%, -150%) rotate(var(--angle)) translateY(-8px) scaleY(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate(-50%, -150%) rotate(var(--angle)) translateY(-8px) scaleY(0.5);
+  }
+}
+
+.animate-ray-blink {
+  animation: ray-blink 0.8s ease-in-out infinite;
+}
+
+.animate-led-pulse {
+  animation: soft-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-fan-spin {
+  animation: spin 2s linear infinite;
+}
+
+.animate-pump-bounce {
+  animation: bounce-subtle 1.5s ease-in-out infinite;
+}
+
+.text-flow {
+  background: linear-gradient(
+    to right,
+    #C49646,
+    #facc15,
+    #C49646,
+    #eab308,
+    #C49646
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-flow 4s ease infinite;
+}
+
+.text-flow-ai {
+  background: linear-gradient(
+    to right,
+    #00f2ff,
+    #bc13fe,
+    #00f2ff,
+    #7d12ff,
+    #00f2ff
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-flow 4s ease infinite;
+  text-shadow: 0 0 10px rgba(188, 19, 254, 0.3);
 }
 
 .skeleton {
@@ -73,4 +183,36 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom styles for time input */
+input[type="time"] {
+  color-scheme: light;
+  transition: all 0.3s ease;
+}
+
+input[type="time"]:hover {
+  border-color: rgba(196, 150, 70, 0.6); /* primary/60 */
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  transform: translateY(-2px); /* -translate-y-0.5 approx */
+}
+
+input[type="time"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(196, 150, 70, 0.2); /* ring-2 ring-primary/20 */
+  transform: translateY(0);
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(58%) sepia(35%) saturate(740%) hue-rotate(5deg) brightness(92%) contrast(85%); /* Matches --primary #C49646 */
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+input[type="time"]::-webkit-inner-spin-button,
+input[type="time"]::-webkit-clear-button {
+  display: none;
+  -webkit-appearance: none;
 }

@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
   Box,
-  Settings,
   Leaf,
   Bot
 } from "lucide-react"
@@ -15,7 +14,6 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Automation", href: "/automation", icon: Bot },
   { name: "Digital Twin", href: "/digital-twin", icon: Box },
-  { name: "Settings", href: "/settings", icon: Settings },
 ]
 
 export default function Sidebar() {
@@ -25,8 +23,13 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground transition-transform sm:translate-x-0 flex flex-col justify-between">
       <div>
         <div className="flex flex-col items-center justify-center pt-10 pb-8">
-          <div className="w-20 h-20 rounded-full bg-primary/20 mb-3 flex items-center justify-center">
-            <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+          <div className="w-24 h-24 relative mb-3 flex items-center justify-center">
+            {/* Rotating dotted circle */}
+            <div className="absolute inset-0 rounded-full border-4 border-dotted border-primary/50 animate-[spin_10s_linear_infinite]" />
+            {/* Blinging effect (pulsing background glow) */}
+            <div className="absolute inset-2 rounded-full bg-primary/20 animate-pulse" />
+            
+            <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground z-10 shadow-[0_0_15px_rgba(76,175,80,0.5)] transition-transform hover:scale-105">
               <Leaf className="w-8 h-8" />
             </div>
           </div>
