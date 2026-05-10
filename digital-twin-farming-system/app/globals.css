@@ -74,3 +74,35 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom styles for time input */
+input[type="time"] {
+  color-scheme: light;
+  transition: all 0.3s ease;
+}
+
+input[type="time"]:hover {
+  border-color: rgba(196, 150, 70, 0.6); /* primary/60 */
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  transform: translateY(-2px); /* -translate-y-0.5 approx */
+}
+
+input[type="time"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(196, 150, 70, 0.2); /* ring-2 ring-primary/20 */
+  transform: translateY(0);
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(58%) sepia(35%) saturate(740%) hue-rotate(5deg) brightness(92%) contrast(85%); /* Matches --primary #C49646 */
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+input[type="time"]::-webkit-inner-spin-button,
+input[type="time"]::-webkit-clear-button {
+  display: none;
+  -webkit-appearance: none;
+}

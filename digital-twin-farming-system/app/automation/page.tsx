@@ -79,6 +79,88 @@ function formatSpectrum(spectrum: AutomationSettings["ledSpectrum"]) {
   return spectrum.charAt(0).toUpperCase() + spectrum.slice(1);
 }
 
+function TimePickerDropdown({
+  value,
+  onChange,
+  isOpen,
+  setIsOpen,
+  dropdownRef,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  isOpen: boolean;
+  setIsOpen: (val: boolean) => void;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [h, m] = value.split(":");
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"));
+
+  return (
+    <div className="relative group" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm transition-all duration-300 ${
+          isOpen
+            ? "border-primary ring-2 ring-primary/20"
+            : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <Clock3 className={`h-4 w-4 transition-colors ${isOpen ? "text-primary" : "text-gray-400"}`} />
+          <span className="text-gray-700 font-medium">{value}</span>
+        </div>
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? "rotate-180 text-primary" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl left-0 md:left-auto md:right-0">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-gray-400">Hours</div>
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                {hours.map((hour) => (
+                  <div
+                    key={hour}
+                    onClick={() => onChange(`${hour}:${m}`)}
+                    className={`cursor-pointer rounded-lg px-2 py-1.5 text-center text-sm transition-all ${
+                      hour === h
+                        ? "bg-primary text-white font-bold"
+                        : "text-gray-600 hover:bg-primary/10 hover:text-primary"
+                    }`}
+                  >
+                    {hour}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="w-px bg-gray-100 my-2" />
+            <div className="flex-1">
+              <div className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-gray-400">Mins</div>
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                {minutes.map((min) => (
+                  <div
+                    key={min}
+                    onClick={() => onChange(`${h}:${min}`)}
+                    className={`cursor-pointer rounded-lg px-2 py-1.5 text-center text-sm transition-all ${
+                      min === m
+                        ? "bg-primary text-white font-bold"
+                        : "text-gray-600 hover:bg-primary/10 hover:text-primary"
+                    }`}
+                  >
+                    {min}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AutomationPage() {
   const [racks, setRacks] = useState<Rack[]>([]);
   const [trays, setTrays] = useState<Tray[]>([]);
@@ -87,8 +169,17 @@ export default function AutomationPage() {
 
   const [isRackOpen, setIsRackOpen] = useState(false);
   const [isTrayOpen, setIsTrayOpen] = useState(false);
+  const [isSpectrumOpen, setIsSpectrumOpen] = useState(false);
+  const [isStartTimeOpen, setIsStartTimeOpen] = useState(false);
+  const [isEndTimeOpen, setIsEndTimeOpen] = useState(false);
+  const [isMockTimeOpen, setIsMockTimeOpen] = useState(false);
+
   const rackDropdownRef = useRef<HTMLDivElement>(null);
   const trayDropdownRef = useRef<HTMLDivElement>(null);
+  const spectrumDropdownRef = useRef<HTMLDivElement>(null);
+  const startTimeDropdownRef = useRef<HTMLDivElement>(null);
+  const endTimeDropdownRef = useRef<HTMLDivElement>(null);
+  const mockTimeDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -98,6 +189,18 @@ export default function AutomationPage() {
       }
       if (trayDropdownRef.current && !trayDropdownRef.current.contains(event.target as Node)) {
         setIsTrayOpen(false);
+      }
+      if (spectrumDropdownRef.current && !spectrumDropdownRef.current.contains(event.target as Node)) {
+        setIsSpectrumOpen(false);
+      }
+      if (startTimeDropdownRef.current && !startTimeDropdownRef.current.contains(event.target as Node)) {
+        setIsStartTimeOpen(false);
+      }
+      if (endTimeDropdownRef.current && !endTimeDropdownRef.current.contains(event.target as Node)) {
+        setIsEndTimeOpen(false);
+      }
+      if (mockTimeDropdownRef.current && !mockTimeDropdownRef.current.contains(event.target as Node)) {
+        setIsMockTimeOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -136,6 +239,13 @@ export default function AutomationPage() {
     async function loadRacks() {
       const response = await fetch("/api/racks");
       const data = (await response.json()) as Rack[];
+      
+      if (!Array.isArray(data)) {
+        setRacks([]);
+        setStatusMessage("Invalid rack data received.");
+        return;
+      }
+
       setRacks(data);
       if (data.length > 0) {
         setSelectedRackId(data[0].id);
@@ -153,6 +263,13 @@ export default function AutomationPage() {
     async function loadTrays() {
       const response = await fetch(`/api/trays?rackId=${selectedRackId}`);
       const data = (await response.json()) as Tray[];
+
+      if (!Array.isArray(data)) {
+        setTrays([]);
+        setStatusMessage("Invalid tray data received.");
+        return;
+      }
+
       setTrays(data);
       if (data.length > 0) {
         setSelectedTrayId(data[0].id);
@@ -370,7 +487,7 @@ export default function AutomationPage() {
               type="button"
               onClick={() => setIsRackOpen(!isRackOpen)}
               className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 ${
-                isRackOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+                isRackOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
               }`}
             >
               <span className="truncate">
@@ -393,12 +510,12 @@ export default function AutomationPage() {
                         }}
                         className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
                           isSelected
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-700 hover:bg-blue-50/50 hover:pl-5"
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-gray-700 hover:bg-primary/5 hover:pl-5"
                         }`}
                       >
                         <span className="truncate">{rack.name}</span>
-                        {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                        {isSelected && <Check className="h-4 w-4 text-primary" />}
                       </div>
                     );
                   })}
@@ -419,7 +536,7 @@ export default function AutomationPage() {
               onClick={() => !trays.length ? null : setIsTrayOpen(!isTrayOpen)}
               disabled={trays.length === 0}
               className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 disabled:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed ${
-                isTrayOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+                isTrayOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
               }`}
             >
               <span className="truncate">
@@ -442,12 +559,12 @@ export default function AutomationPage() {
                         }}
                         className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
                           isSelected
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-700 hover:bg-blue-50/50 hover:pl-5"
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-gray-700 hover:bg-primary/5 hover:pl-5"
                         }`}
                       >
                         <span className="truncate">{tray.name}</span>
-                        {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                        {isSelected && <Check className="h-4 w-4 text-primary" />}
                       </div>
                     );
                   })}
@@ -475,31 +592,23 @@ export default function AutomationPage() {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <label className="space-y-2">
               <span className="text-sm font-semibold text-gray-700">LED Start</span>
-              <input
-                type="time"
+              <TimePickerDropdown
                 value={formState.ledStartTime}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    ledStartTime: event.target.value,
-                  }))
-                }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                onChange={(val) => setFormState((curr) => ({ ...curr, ledStartTime: val }))}
+                isOpen={isStartTimeOpen}
+                setIsOpen={setIsStartTimeOpen}
+                dropdownRef={startTimeDropdownRef}
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-sm font-semibold text-gray-700">LED End</span>
-              <input
-                type="time"
+              <TimePickerDropdown
                 value={formState.ledEndTime}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    ledEndTime: event.target.value,
-                  }))
-                }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                onChange={(val) => setFormState((curr) => ({ ...curr, ledEndTime: val }))}
+                isOpen={isEndTimeOpen}
+                setIsOpen={setIsEndTimeOpen}
+                dropdownRef={endTimeDropdownRef}
               />
             </label>
 
@@ -507,24 +616,49 @@ export default function AutomationPage() {
               <span className="text-sm font-semibold text-gray-700">
                 LED Spectrum
               </span>
-              <div className="relative">
-                <select
-                  value={formState.ledSpectrum}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      ledSpectrum: event.target
-                        .value as AutomationSettings["ledSpectrum"],
-                    }))
-                  }
-                  className="w-full appearance-none rounded-2xl border border-gray-200 bg-white pl-4 pr-10 py-3 text-sm outline-none focus:border-primary"
+              <div className="relative" ref={spectrumDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsSpectrumOpen(!isSpectrumOpen)}
+                  className={`w-full flex items-center justify-between rounded-2xl border bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 ${
+                    isSpectrumOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
+                  }`}
                 >
-                  <option value="mixed">Mixed</option>
-                  <option value="blue">Blue</option>
-                  <option value="red">Red</option>
-                  <option value="white">White</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <span className="truncate capitalize">
+                    {formState.ledSpectrum}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isSpectrumOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isSpectrumOpen && (
+                  <div className="absolute z-50 mt-2 w-full rounded-2xl border border-gray-100 bg-white p-2 shadow-lg">
+                    <div className="max-h-60 overflow-y-auto space-y-1">
+                      {(["mixed", "blue", "red", "white"] as const).map((spectrum) => {
+                        const isSelected = spectrum === formState.ledSpectrum;
+                        return (
+                          <div
+                            key={spectrum}
+                            onClick={() => {
+                              setFormState((current) => ({
+                                ...current,
+                                ledSpectrum: spectrum,
+                              }));
+                              setIsSpectrumOpen(false);
+                            }}
+                            className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 capitalize ${
+                              isSelected
+                                ? "bg-primary/10 text-primary font-medium"
+                                : "text-gray-700 hover:bg-primary/5 hover:pl-5"
+                            }`}
+                          >
+                            <span className="truncate">{spectrum}</span>
+                            {isSelected && <Check className="h-4 w-4 text-primary" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </label>
 
@@ -543,7 +677,7 @@ export default function AutomationPage() {
                     fanTriggerTemperature: Number(event.target.value),
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
 
@@ -561,7 +695,7 @@ export default function AutomationPage() {
                     pumpIntervalMinutes: Number(event.target.value),
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
 
@@ -579,7 +713,7 @@ export default function AutomationPage() {
                     pumpDurationSeconds: Number(event.target.value),
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
           </div>
@@ -681,11 +815,12 @@ export default function AutomationPage() {
               </p>
             </div>
             <div className="flex gap-3">
-              <input
-                type="time"
+              <TimePickerDropdown
                 value={mockCurrentTime}
-                onChange={(event) => setMockCurrentTime(event.target.value)}
-                className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                onChange={(val) => setMockCurrentTime(val)}
+                isOpen={isMockTimeOpen}
+                setIsOpen={setIsMockTimeOpen}
+                dropdownRef={mockTimeDropdownRef}
               />
               <button
                 type="button"

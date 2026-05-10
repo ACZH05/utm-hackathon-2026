@@ -157,7 +157,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={() => setIsRackOpen(!isRackOpen)}
                 className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 ${
-                  isRackOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+                  isRackOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
                 }`}
               >
                 <span className="truncate">
@@ -180,12 +180,12 @@ export default function Dashboard() {
                           }}
                           className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
                             isSelected
-                              ? "bg-blue-50 text-blue-700 font-medium"
-                              : "text-gray-700 hover:bg-blue-50/50 hover:pl-5"
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-gray-700 hover:bg-primary/5 hover:pl-5"
                           }`}
                         >
                           <span className="truncate">{rack.name}</span>
-                          {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                          {isSelected && <Check className="h-4 w-4 text-primary" />}
                         </div>
                       );
                     })}
@@ -210,7 +210,7 @@ export default function Dashboard() {
                 onClick={() => !trays.length ? null : setIsTrayOpen(!isTrayOpen)}
                 disabled={trays.length === 0}
                 className={`w-full flex items-center justify-between rounded-2xl border bg-white pl-4 pr-4 py-3 text-sm outline-none shadow-sm transition-all duration-300 disabled:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed ${
-                  isTrayOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
+                  isTrayOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-200 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
                 }`}
               >
                 <span className="truncate">
@@ -233,12 +233,12 @@ export default function Dashboard() {
                           }}
                           className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-300 ${
                             isSelected
-                              ? "bg-blue-50 text-blue-700 font-medium"
-                              : "text-gray-700 hover:bg-blue-50/50 hover:pl-5"
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-gray-700 hover:bg-primary/5 hover:pl-5"
                           }`}
                         >
                           <span className="truncate">{tray.name}</span>
-                          {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                          {isSelected && <Check className="h-4 w-4 text-primary" />}
                         </div>
                       );
                     })}
