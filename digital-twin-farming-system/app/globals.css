@@ -25,6 +25,7 @@
   --font-mono: var(--font-geist-mono);
 
   --animate-shimmer: shimmer 2s infinite linear;
+  --animate-text-flow: text-flow 3s ease infinite;
 
   @keyframes shimmer {
     0% {
@@ -34,6 +35,48 @@
       transform: translateX(100%);
     }
   }
+
+  @keyframes text-flow {
+    0%, 100% {
+      background-size: 200% 200%;
+      background-position: left center;
+    }
+    50% {
+      background-size: 200% 200%;
+      background-position: right center;
+    }
+  }
+}
+
+.text-flow {
+  background: linear-gradient(
+    to right,
+    #C49646,
+    #facc15,
+    #C49646,
+    #eab308,
+    #C49646
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-flow 4s ease infinite;
+}
+
+.text-flow-ai {
+  background: linear-gradient(
+    to right,
+    #00f2ff,
+    #bc13fe,
+    #00f2ff,
+    #7d12ff,
+    #00f2ff
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-flow 4s ease infinite;
+  text-shadow: 0 0 10px rgba(188, 19, 254, 0.3);
 }
 
 .skeleton {

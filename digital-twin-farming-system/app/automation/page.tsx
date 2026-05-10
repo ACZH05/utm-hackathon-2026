@@ -582,8 +582,11 @@ export default function AutomationPage() {
               <h2 className="text-xl font-semibold text-gray-800">
                 Manual Schedule
               </h2>
-              <p className="text-sm text-gray-500">
-                Active mode: {formState.mode.toUpperCase()}
+              <p className="text-sm font-medium">
+                <span className="text-gray-500">Active mode: </span>
+                <span className={`${formState.mode === "ai" ? "text-flow-ai" : "text-flow"} font-bold`}>
+                  {formState.mode.toUpperCase()}
+                </span>
               </p>
             </div>
             <SlidersHorizontal className="h-6 w-6 text-primary" />
