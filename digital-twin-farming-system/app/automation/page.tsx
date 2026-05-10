@@ -253,6 +253,9 @@ export default function AutomationPage() {
       const response = await fetch(
         `/api/automation/logs?trayId=${trayId}&limit=10`,
       );
+      const response = await fetch(
+        `/api/automation/logs?trayId=${trayId}&limit=10`,
+      );
       const data = (await response.json()) as AutomationEvent[];
       if (!Array.isArray(data)) return;
       setAutomationLogs(data);
@@ -265,6 +268,23 @@ export default function AutomationPage() {
   useEffect(() => {
     async function loadRacks() {
       const response = await fetch("/api/racks");
+      const payload = await response.json();
+
+      if (!Array.isArray(payload)) {
+        const message =
+          payload?.error || payload?.message || "Failed to load racks.";
+        setRacks([]);
+        setSelectedRackId("");
+        setStatusMessage(message);
+        return;
+      }
+
+      setRacks(payload);
+      if (payload.length > 0) {
+        setSelectedRackId(payload[0].id);
+      setRacks(data);
+      if (data.length > 0) {
+        setSelectedRackId(data[0].id);
       const payload = await response.json();
 
       if (!Array.isArray(payload)) {
@@ -632,6 +652,11 @@ export default function AutomationPage() {
             <label className="space-y-2">
               <span className="text-sm font-semibold text-gray-700">LED Start</span>
               <TimePickerDropdown
+              <span className="text-sm font-semibold text-gray-700">
+                LED Start
+              </span>
+              <input
+                type="time"
                 value={formState.ledStartTime}
                 onChange={(val) => setFormState((curr) => ({ ...curr, ledStartTime: val }))}
                 isOpen={isStartTimeOpen}
@@ -643,6 +668,11 @@ export default function AutomationPage() {
             <label className="space-y-2">
               <span className="text-sm font-semibold text-gray-700">LED End</span>
               <TimePickerDropdown
+              <span className="text-sm font-semibold text-gray-700">
+                LED End
+              </span>
+              <input
+                type="time"
                 value={formState.ledEndTime}
                 onChange={(val) => setFormState((curr) => ({ ...curr, ledEndTime: val }))}
                 isOpen={isEndTimeOpen}
@@ -921,6 +951,9 @@ export default function AutomationPage() {
                     )}
                   </div>
                   {activeDeviceState && statusBadge(activeDeviceState.ledStatus)}
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  {activeDeviceState &&
+                    statusBadge(activeDeviceState.ledStatus)}
                 </div>
                 <div className="font-semibold text-gray-800">LED Lights</div>
                 <div className="text-sm text-gray-500">
@@ -932,6 +965,9 @@ export default function AutomationPage() {
                 <div className="mb-4 flex items-center justify-between">
                   <Fan className={`h-5 w-5 text-primary ${activeDeviceState?.fanStatus.toLowerCase() === "on" ? "animate-fan-spin" : ""}`} />
                   {activeDeviceState && statusBadge(activeDeviceState.fanStatus)}
+                  <Fan className="h-5 w-5 text-primary" />
+                  {activeDeviceState &&
+                    statusBadge(activeDeviceState.fanStatus)}
                 </div>
                 <div className="font-semibold text-gray-800">Cooling Fan</div>
                 <div className="text-sm text-gray-500">
@@ -943,6 +979,9 @@ export default function AutomationPage() {
                 <div className="mb-4 flex items-center justify-between">
                   <Droplets className={`h-5 w-5 text-primary ${activeDeviceState?.pumpStatus.toLowerCase() === "on" ? "animate-pump-bounce" : ""}`} />
                   {activeDeviceState && statusBadge(activeDeviceState.pumpStatus)}
+                  <Droplets className="h-5 w-5 text-primary" />
+                  {activeDeviceState &&
+                    statusBadge(activeDeviceState.pumpStatus)}
                 </div>
                 <div className="font-semibold text-gray-800">Water Pump</div>
                 <div className="text-sm text-gray-500">
