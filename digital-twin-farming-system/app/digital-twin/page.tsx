@@ -241,21 +241,24 @@ export default function DigitalTwin() {
         {/* SIDE PANELS */}
         <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-2">
           {/* SENSOR PANEL */}
-          <div className="bg-green-600 text-white rounded-3xl p-6 shadow-xl shrink-0">
-            <h3 className="text-lg font-semibold mb-5">Sensor Data</h3>
+          <div className="bg-slate-800 text-white rounded-3xl p-6 shadow-xl shrink-0 border border-slate-700">
+            <h3 className="text-lg font-semibold mb-5 text-slate-100 flex items-center justify-between">
+              Sensor Data
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded">Live</span>
+            </h3>
             <div className="space-y-4">
               <DataRow
-                icon={<Thermometer className="w-4 h-4 shrink-0" />}
+                icon={<Thermometer className="w-4 h-4 shrink-0 text-orange-400" />}
                 label="Temperature"
                 value={`${currentData.sensorReading.temperature}°C`}
               />
               <DataRow
-                icon={<Droplets className="w-4 h-4 shrink-0" />}
+                icon={<Droplets className="w-4 h-4 shrink-0 text-blue-400" />}
                 label="Humidity"
                 value={`${currentData.sensorReading.humidity}%`}
               />
               <DataRow
-                icon={<Activity className="w-4 h-4 shrink-0" />}
+                icon={<Activity className="w-4 h-4 shrink-0 text-emerald-400" />}
                 label="Soil Moisture"
                 value={`${currentData.sensorReading.soilMoisture}%`}
               />
@@ -359,14 +362,18 @@ function DataRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between pb-3 border-b border-green-500/30 last:border-0 last:pb-0 gap-3">
-      <div className="flex items-center gap-3 text-green-50 text-sm flex-1 min-w-0">
-        <div className="bg-green-500/40 p-1.5 rounded-lg shrink-0">{icon}</div>
-        <span className="leading-tight wrap-break-word whitespace-normal">
+    <div className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0 gap-3">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="bg-slate-700/50 p-1.5 rounded-lg shrink-0 border border-slate-600/50">
+          {icon}
+        </div>
+        <span className="text-xs font-medium text-slate-400 leading-tight">
           {label}
         </span>
       </div>
-      <span className="font-bold text-lg shrink-0 text-right">{value}</span>
+      <span className="font-bold text-base text-white tabular-nums shrink-0 ml-1">
+        {value}
+      </span>
     </div>
   );
 }
@@ -386,47 +393,70 @@ function StatusCard({
 }) {
   const styleMap = {
     normal: {
-      bg: "bg-green-500/20 text-green-300 border-green-500/30",
-      icon: "bg-white/10 text-gray-300",
+      bg: "bg-green-500/10 border-green-500/20",
+      text: "text-green-400",
+      icon: "bg-green-500/20 text-green-400 border-green-500/30",
+      statusBg: "bg-green-500/20 text-green-400 border-green-500/30",
     },
     on: {
-      bg: "bg-green-500/20 text-green-300 border-green-500/30",
-      icon: "bg-white/10 text-gray-300",
+      bg: "bg-green-500/10 border-green-500/20",
+      text: "text-green-400",
+      icon: "bg-green-500/20 text-green-400 border-green-500/30",
+      statusBg: "bg-green-500/20 text-green-400 border-green-500/30",
     },
     warning: {
-      bg: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-      icon: "bg-yellow-500/20 text-yellow-400",
+      bg: "bg-yellow-500/10 border-yellow-500/20",
+      text: "text-yellow-400",
+      icon: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      statusBg: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     },
     critical: {
-      bg: "bg-red-500/20 text-red-400 border-red-500/30",
-      icon: "bg-red-500/20 text-red-400",
+      bg: "bg-red-500/10 border-red-500/20",
+      text: "text-red-400",
+      icon: "bg-red-500/20 text-red-400 border-red-500/30",
+      statusBg: "bg-red-500/20 text-red-400 border-red-500/30",
     },
     off: {
-      bg: "bg-gray-500/20 text-gray-400 border-gray-500/30",
-      icon: "bg-gray-800 text-gray-500",
+      bg: "bg-slate-800/50 border-slate-700",
+      text: "text-slate-400",
+      icon: "bg-slate-700/50 text-slate-500 border-slate-600/50",
+      statusBg: "bg-slate-700/50 text-slate-400 border-slate-600/50",
     },
   };
   const currentStyle = styleMap[status] || styleMap.off;
 
   return (
-    <div className="rounded-2xl p-3.5 flex items-center justify-between border border-white/5 bg-white/5 backdrop-blur-sm gap-3">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className={`p-2.5 rounded-xl shrink-0 ${currentStyle.icon}`}>
-          {icon}
-        </div>
-        <div className="flex-1 pr-2">
-          <div className="text-sm font-semibold tracking-wide text-gray-100">
-            {title}
-          </div>
-          <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>
-        </div>
-      </div>
+    <div className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]">
       <button
         onClick={onClick}
-        className={`px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-wider border shrink-0 text-center uppercase transition-all duration-200 hover:scale-105 ${currentStyle.bg}`}
-      >
-        {status}
-      </button>
+        className="absolute inset-0 z-20 w-full h-full cursor-pointer focus:outline-none"
+        aria-label={`Toggle ${title}`}
+      />
+      
+      <div className={`relative z-10 p-3 flex items-center justify-between gap-3 border ${currentStyle.bg} transition-colors duration-300`}>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className={`p-1.5 rounded-lg shrink-0 border ${currentStyle.icon}`}>
+            {/* Small icon size wrapper */}
+            <div className="scale-90">
+              {icon}
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-white leading-tight">
+              {title}
+            </div>
+            <div className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 leading-none ${currentStyle.text}`}>
+              {subtitle}
+            </div>
+          </div>
+        </div>
+        
+        <div className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border shrink-0 ${currentStyle.statusBg}`}>
+          {status}
+        </div>
+      </div>
+      
+      <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-tr from-white/5 via-transparent to-white/5" />
     </div>
   );
 }
